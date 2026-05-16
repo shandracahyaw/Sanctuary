@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user demographic and academic identity info.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "nim": { "type": "string" },
+        "faculty": { "type": "string" },
+        "programStudy": { "type": "string" },
+        "username": { "type": "string" },
+        "semester": { "type": "number" },
+        "status": { "type": "string", "enum": ["Aktif", "Cuti", "Non-Aktif"] },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "nim", "semester"]
+    },
+    "Course": {
+      "title": "Academic Course",
+      "description": "Details of a course in the curriculum.",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string", "enum": ["Non BPro (Umum)", "BPro (Pilihan)"] },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "sks": { "type": "number" },
+        "lecturer": { "type": "string" },
+        "semester": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "name", "sks", "semester"]
+    },
+    "Evaluation": {
+      "title": "Session Evaluation",
+      "description": "Individual scores for course sessions.",
+      "type": "object",
+      "properties": {
+        "session": { "type": "number" },
+        "type": { "type": "string", "enum": ["Kehadiran", "Tugas / Tuton", "TMK"] },
+        "score": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["session", "type", "score"]
+    },
+    "Grade": {
+      "title": "Academic Grade",
+      "description": "Final grade mapping for a course.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "courseName": { "type": "string" },
+        "semester": { "type": "number" },
+        "gradeSymbol": { "type": "string" },
+        "gradeValue": { "type": "number" },
+        "totalMutu": { "type": "number" },
+        "remarks": { "type": "string", "enum": ["Lulus (LL)", "Tidak Lulus (TL)"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "gradeSymbol", "gradeValue"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "The root document for a student's profile."
+    },
+    "users/{userId}/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Courses assigned to the student."
+    },
+    "users/{userId}/courses/{courseId}/evaluations/{evalId}": {
+      "schema": "Evaluation",
+      "description": "Session-by-session performance logs."
+    },
+    "users/{userId}/grades/{gradeId}": {
+      "schema": "Grade",
+      "description": "Final grades (KHS) for each course."
+    }
+  }
+}

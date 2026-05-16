@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Outfit", sans-serif;
+  
+  --color-studelle-burgundy: #2D0B13;
+  --color-studelle-burgundy-dark: #1A0509;
+  --color-studelle-cream: #FFF9CD;
+  --color-studelle-cream-light: #FFFEF0;
+  --color-studelle-accent: #800020;
+  --color-studelle-gold: #C5A059;
+}
+
+@layer base {
+  body {
+    @apply bg-studelle-burgundy-dark text-studelle-burgundy font-sans antialiased;
+  }
+}
+
+@layer components {
+  .studelle-card {
+    @apply bg-studelle-cream border border-studelle-burgundy/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden transition-all duration-500 hover:shadow-[0_30px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/5;
+  }
+  
+  .studelle-sidebar-item {
+    @apply flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 cursor-pointer text-white/40 hover:text-white hover:bg-white/5 font-bold;
+  }
+  
+  .studelle-sidebar-item-active {
+    @apply text-white bg-studelle-accent shadow-2xl shadow-studelle-accent/40;
+  }
+
+  .studelle-input {
+    @apply w-full bg-studelle-cream-light border border-studelle-burgundy/20 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-studelle-accent/20 transition-all;
+  }
+
+  .studelle-button {
+    @apply bg-studelle-accent text-white px-8 py-4 rounded-2xl font-bold text-sm tracking-widest uppercase hover:bg-studelle-accent/90 active:scale-95 transition-all shadow-xl shadow-studelle-accent/20;
+  }
+
+  /* Custom Sidebar Scrollbar */
+  aside::-webkit-scrollbar {
+    width: 5px;
+  }
+  aside::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  aside::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  aside::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

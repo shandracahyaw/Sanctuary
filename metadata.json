@@ -1,0 +1,8 @@
+{
+  "name": "Studelle",
+  "description": "A comprehensive student academic management platform with a sophisticated, professional interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

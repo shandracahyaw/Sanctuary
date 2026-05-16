@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Validators ---
+    function isValidUser(data) {
+      return data.displayName is string && data.displayName.size() <= 100 &&
+             data.nim is string && data.nim.size() <= 20 &&
+             data.faculty is string && data.faculty.size() <= 100 &&
+             data.programStudy is string && data.programStudy.size() <= 100 &&
+             data.username is string && data.username.size() <= 50 &&
+             data.semester is number && data.semester >= 1 && data.semester <= 14 &&
+             data.status in ['Aktif', 'Cuti', 'Non-Aktif'] &&
+             (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1000));
+    }
+
+    function isValidCourse(data) {
+      return data.category in ['Non BPro (Umum)', 'BPro (Pilihan)'] &&
+             data.code is string && data.code.size() <= 20 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.sks is number && data.sks >= 0 && data.sks <= 12 &&
+             data.lecturer is string && data.lecturer.size() <= 100 &&
+             data.semester is number && data.semester >= 1 && data.semester <= 8;
+    }
+
+    function isValidEvaluation(data) {
+      return data.session is number && data.session >= 1 && data.session <= 16 &&
+             data.type in ['Kehadiran', 'Tugas / Tuton', 'TMK'] &&
+             data.score is number && data.score >= 0 && data.score <= 100;
+    }
+
+    function isValidGrade(data) {
+      return data.courseId is string && data.courseId.size() <= 64 &&
+             data.courseName is string && data.courseName.size() <= 200 &&
+             data.semester is number && data.semester >= 1 && data.semester <= 8 &&
+             data.gradeSymbol is string && data.gradeSymbol.size() <= 5 &&
+             data.gradeValue is number && data.gradeValue >= 0 && data.gradeValue <= 4 &&
+             data.totalMutu is number &&
+             data.remarks in ['Lulus (LL)', 'Tidak Lulus (TL)'];
+    }
+
+    // --- Matchers ---
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+                      isValidUser(incoming()) && 
+                      incoming().createdAt == request.time &&
+                      incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && 
+                      isValidUser(incoming()) && 
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time;
+    }
+
+    // Courses subcollection
+    match /users/{userId}/courses/{courseId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+                      isValidId(courseId) &&
+                      isValidCourse(incoming()) &&
+                      incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && 
+                      isValidCourse(incoming()) &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    // Evaluations subcollection
+    match /users/{userId}/courses/{courseId}/evaluations/{evalId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+                      isValidId(evalId) &&
+                      isValidEvaluation(incoming()) &&
+                      incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && 
+                      isValidEvaluation(incoming()) &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    // Grades subcollection
+    match /users/{userId}/grades/{gradeId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+                      isValidId(gradeId) &&
+                      isValidGrade(incoming()) &&
+                      incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && 
+                      isValidGrade(incoming()) &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

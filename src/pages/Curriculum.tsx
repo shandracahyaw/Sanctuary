@@ -4,6 +4,8 @@ import { Plus, Trash2, Edit3, BookMarked, GraduationCap, Loader2 } from 'lucide-
 import { useAuth } from '@/src/contexts/AuthContext';
 import { subscribeCourses, addCourse, updateCourse, deleteCourse } from '@/src/services/firestoreService';
 import { cn } from '@/src/lib/utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -40,6 +42,112 @@ const Curriculum = () => {
     .filter(c => c.semester === activeSem)
     .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
   const totalSks = activeCourses.reduce((acc, c) => acc + (c.sks || 0), 0);
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const TEXT_DARK = [20, 20, 20];
+
+    // Page Frame
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.1);
+    doc.rect(10, 10, 190, 277, 'S');
+
+    // Header Background
+    doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.rect(0, 0, 210, 40, 'F');
+
+    // Header Text
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("times", "bold");
+    doc.setFontSize(42);
+    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(10);
+    doc.text("STUDENT DEVELOPMENT LEARNING EVALUATION ENVIRONMENT", 105, 32, { align: "center", charSpace: 0.5 });
+
+    // Identity Section title
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setFont("times", "bold");
+    doc.setFontSize(14);
+    doc.text("INFORMASI IDENTITAS AKADEMIK", 20, 52);
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.8);
+    doc.line(20, 54, 88, 54);
+
+    // Identity Content
+    doc.setFontSize(11);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    const identityLabels = [
+      { label: "NAMA LENGKAP", value: (profile?.displayName || '-').toUpperCase() },
+      { label: "NIM / ID SISWA", value: (profile?.nim || '-') },
+      { label: "FAKULTAS", value: (profile?.faculty || 'Fakultas Belum Set') },
+      { label: "PROGRAM STUDI", value: (profile?.programStudy || 'Prodi Belum Set') },
+      { label: "SEMESTER AKTIF", value: String(activeSem) },
+    ];
+
+    identityLabels.forEach((item, i) => {
+      doc.setFont("times", "bold");
+      doc.text(item.label, 20, 68 + (i * 7.5));
+      doc.text(":", 65, 68 + (i * 7.5));
+      doc.setFont("times", "normal");
+      doc.text(item.value, 68, 68 + (i * 7.5));
+    });
+
+    // Table
+    autoTable(doc, {
+      startY: 110,
+      head: [['SEMESTER', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'DOSEN PENGAMPU']],
+      body: activeCourses.map(c => [
+        String(c.semester),
+        (c.code || '-').toUpperCase(),
+        (c.name || '-'),
+        String(c.sks || 0),
+        (c.lecturer || '-')
+      ]),
+      headStyles: { 
+        fillColor: PRIMARY_COLOR as any, 
+        textColor: 255, 
+        halign: 'center', 
+        fontStyle: 'bold', 
+        font: 'times', 
+        fontSize: 10,
+        cellPadding: 4
+      },
+      bodyStyles: { 
+        textColor: TEXT_DARK as any, 
+        font: 'times', 
+        fontSize: 9,
+        cellPadding: 4,
+        lineWidth: 0.1,
+        lineColor: [200, 200, 200]
+      },
+      alternateRowStyles: { fillColor: [255, 255, 255] },
+      styles: { 
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 15 },
+        1: { halign: 'center', cellWidth: 25 },
+        2: { halign: 'left' },
+        3: { halign: 'center', cellWidth: 10 },
+        4: { halign: 'left', cellWidth: 45 },
+      },
+      margin: { left: 20, right: 20 }
+    });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont("times", "normal");
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    doc.text(`Dokumen ini dicetak secara otomatis melalui Studelle System pada: ${dateStr} pukul ${timeStr}`, 105, 285, { align: "center" });
+
+    doc.save(`Kurikulum_Smt_${activeSem}_${profile?.displayName?.replace(/\s+/g, '_')}.pdf`);
+  };
 
   const handleSubmit = async () => {
     if (!userId || !formData.code || !formData.name) return;
@@ -231,8 +339,10 @@ const Curriculum = () => {
                   <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-1.5">Daftar Struktur Akademik Resmi</p>
                </div>
             </div>
-            <div className="bg-studelle-burgundy text-white px-8 py-3 rounded-2xl text-xs font-bold tracking-widest shadow-xl">
-               {activeCourses.length} Matakuliah Terdaftar
+            <div className="bg-studelle-burgundy text-white px-8 py-3 rounded-2xl text-xs font-bold tracking-widest shadow-xl flex items-center gap-4">
+               <span>{activeCourses.length} Matakuliah Terdaftar</span>
+               <div className="w-px h-4 bg-white/20" />
+               <button onClick={handleDownloadPDF} className="hover:text-studelle-gold transition-colors uppercase text-[10px]">Cetak</button>
             </div>
          </div>
 

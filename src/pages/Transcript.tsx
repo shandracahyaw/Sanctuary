@@ -4,6 +4,8 @@ import { PageHeader } from '@/src/components/ui/PageHeader';
 import { cn } from '@/src/lib/utils';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { subscribeGrades, deleteGrade, updateGrade, subscribeCourses } from '@/src/services/firestoreService';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const gradeMapping: { [key: string]: number } = {
   'A': 4.00,
@@ -108,6 +110,209 @@ const Transcript = () => {
   const ipk = totalSKS > 0 ? (totalPoints / totalSKS).toFixed(2) : "0.00";
   const semestersCount = new Set(grades.map(g => g.semester)).size || profile?.semester || 1;
 
+  const getPredikat = (ipk: number) => {
+    if (ipk >= 3.51) return "DENGAN PUJIAN (CUMLAUDE)";
+    if (ipk >= 3.01) return "SANGAT MEMUASKAN";
+    if (ipk >= 2.76) return "MEMUASKAN";
+    if (ipk >= 2.00) return "CUKUP";
+    return "KURANG";
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const TEXT_DARK = [20, 20, 20];
+
+    // Page Frame
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.1);
+    doc.rect(5, 5, 200, 287, 'S');
+
+    // Header Background
+    doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.rect(0, 0, 210, 45, 'F'); // Increased height
+
+    // Header Text
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("times", "bold");
+    doc.setFontSize(36);
+    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(10);
+    doc.text("TRANSKRIP NILAI AKADEMIK KUMULATIF", 105, 36, { align: "center" });
+
+    // Identity Section title
+    const idTitle = "IDENTITAS MAHASISWA";
+    const titleY = 58; 
+
+    // Identity Content
+    const identityLabels = [
+      { label: "NAMA LENGKAP", value: (profile?.displayName || '-').toUpperCase() },
+      { label: "NIM / ID SISWA", value: (profile?.nim || '-') },
+      { label: "FAKULTAS", value: (profile?.faculty || 'Fakultas Belum Set') },
+      { label: "PROGRAM STUDI", value: (profile?.programStudy || 'Prodi Belum Set') },
+    ];
+
+    const contentStartY = titleY + 11; 
+    const rowHeight = 7; 
+    const contentEndY = contentStartY + ((identityLabels.length - 1) * rowHeight);
+
+    // Draw Box
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(7, titleY - 8, 196, (contentEndY - titleY) + 14, 'S');
+
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.text(idTitle, 11, titleY);
+    const idTitleWidth = doc.getTextWidth(idTitle);
+    doc.line(11, titleY + 2, 11 + idTitleWidth, titleY + 2);
+
+    doc.setFontSize(10);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+
+    identityLabels.forEach((item, i) => {
+      doc.setFont("times", "bold");
+      doc.text(item.label, 11, contentStartY + (i * rowHeight));
+      doc.text(":", 46, contentStartY + (i * rowHeight));
+      doc.setFont("times", "normal");
+      doc.text(item.value, 49, contentStartY + (i * rowHeight));
+    });
+
+    // Table Header Info
+    const tableTitleY = contentEndY + 18; // Increased gap
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.text("INFORMASI NILAI TRANSKRIP", 10, tableTitleY);
+    doc.setLineWidth(0.5);
+    doc.line(10, tableTitleY + 2, 200, tableTitleY + 2); // Table width: 210 - 20 = 190. Ends at 200.
+
+    const fullGradesForPDF = getFullGrades();
+    
+    // Table
+    autoTable(doc, {
+      startY: tableTitleY + 10, // Gap ~9mm (1.5 lines)
+      head: [['SMT', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'NILAI', 'BOBOT', 'MUTU', 'KET']],
+      body: fullGradesForPDF.map((g) => [
+        `Smt ${g.semester || '-'}`,
+        (g.courseCode || g.code || '-').toUpperCase(),
+        (g.courseName || g.name || '-'),
+        String(g.sks || 0),
+        g.letterGrade || '-',
+        (g.point || 0).toFixed(2),
+        (g.totalPoint || 0).toFixed(2),
+        (g.letterGrade === 'E' || g.point === 0) ? 'TL' : 'LL'
+      ]),
+      headStyles: { 
+        fillColor: PRIMARY_COLOR as any, 
+        textColor: 255, 
+        halign: 'center', 
+        fontStyle: 'bold', 
+        font: 'times', 
+        fontSize: 7,
+        cellPadding: 3 // Slightly more padding for header
+      },
+      bodyStyles: { 
+        textColor: TEXT_DARK as any, 
+        font: 'times', 
+        fontSize: 7,
+        cellPadding: 2, // Tight body padding
+        lineWidth: 0.1,
+        lineColor: [100, 100, 100] // Darker borders
+      },
+      alternateRowStyles: { fillColor: [255, 255, 255] },
+      styles: { 
+        valign: 'middle',
+        lineColor: [100, 100, 100],
+        minCellHeight: 0.2
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 15 }, // SMT
+        1: { halign: 'center', cellWidth: 18 }, // KODE MK
+        2: { halign: 'left', cellWidth: 70 },   // MATAKULIAH
+        3: { halign: 'center', cellWidth: 15 }, // SKS
+        4: { halign: 'center', cellWidth: 18 }, // NILAI
+        5: { halign: 'center', cellWidth: 18 }, // BOBOT
+        6: { halign: 'center', cellWidth: 18 }, // MUTU
+        7: { halign: 'center', cellWidth: 15 }, // KET
+      },
+      margin: { left: 10, right: 10 }
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 105;
+    const tPoints = fullGradesForPDF.reduce((sum, g) => sum + (g.totalPoint || 0), 0);
+    const tSks = fullGradesForPDF.reduce((sum, g) => sum + (g.sks || 0), 0);
+    const tIpk = tSks > 0 ? tPoints / tSks : 0;
+
+    // Check if summary fits on page
+    if (finalY > 230) doc.addPage();
+    const summaryY = finalY > 230 ? 20 : finalY + 10;
+
+    // Summary Box
+    const boxX = 13;
+    const boxW = 184;
+    const boxH = 35;
+    const dividerX = 110;
+
+    // Background for Right Section
+    doc.setFillColor(248, 248, 245); // Light beige background
+    doc.rect(dividerX, summaryY, boxW - (dividerX - boxX), boxH, 'F');
+
+    // Box Border
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.8);
+    doc.rect(boxX, summaryY, boxW, boxH, 'S');
+
+    // Divider Line
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(dividerX, summaryY + 5, dividerX, summaryY + 30); 
+
+    doc.setFontSize(9);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.setFont("times", "bold");
+    
+    // Left summary
+    const labelX = 18;
+    const colonX = 64;
+    
+    doc.text("TOTAL SKS KUMULATIF", labelX, summaryY + 10);
+    doc.text(`: ${tSks}`, colonX, summaryY + 10);
+    doc.text("TOTAL MUTU KUMULATIF", labelX, summaryY + 18);
+    doc.text(`: ${tPoints.toFixed(2)}`, colonX, summaryY + 18);
+    doc.text("PREDIKAT KELULUSAN", labelX, summaryY + 26);
+    
+    // Predicate adjustment for long text
+    const predikat = getPredikat(tIpk);
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    if (predikat.length > 20) doc.setFontSize(8);
+    doc.text(`: ${predikat}`, colonX, summaryY + 26);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.setFontSize(9);
+
+    // Right summary (IPK)
+    const centerXRight = dividerX + (boxW - (dividerX - boxX)) / 2;
+    doc.setFontSize(10);
+    doc.text("IP Kumulatif (IPK)", centerXRight, summaryY + 14, { align: "center" });
+    doc.setFontSize(24);
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(tIpk.toFixed(2), centerXRight, summaryY + 28, { align: "center" });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont("times", "normal");
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    doc.text(`Dokumen ini dicetak secara otomatis melalui Studelle System pada: ${dateStr} pukul ${timeStr}`, 105, 285, { align: "center" });
+
+    doc.save(`Transkrip_${(profile?.displayName || 'Mahasiswa').replace(/\s+/g, '_')}.pdf`);
+  };
+
   return (
     <div className="space-y-12 pb-20 pt-6">
       <PageHeader title="Transkrip Akademik" />
@@ -179,7 +384,7 @@ const Transcript = () => {
                   <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-1.5">Dokumen Resmi Terverifikasi Sistem</p>
                </div>
             </div>
-            <button className="studelle-button py-3 px-10 text-[10px]">Cetak Transkrip</button>
+            <button onClick={handleDownloadPDF} className="studelle-button py-3 px-10 text-[10px]">Cetak Transkrip</button>
          </div>
 
          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-burgundy/10">

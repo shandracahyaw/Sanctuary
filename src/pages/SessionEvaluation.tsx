@@ -9,11 +9,14 @@ import {
   Star,
   Loader2,
   Check,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { getCourses, addEvaluation, getEvaluations, updateEvaluation, deleteEvaluation } from '@/src/services/firestoreService';
 import { cn } from '@/src/lib/utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -158,6 +161,144 @@ const SessionEvaluation = () => {
 
   const grandTotal = calculateGrandTotal(evaluations, activeSem, courseCategory);
 
+  const handleDownloadPDF = () => {
+    if (!selectedCourse || !userId) return;
+    
+    const doc = new jsPDF();
+    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const TEXT_DARK = [20, 20, 20];
+
+    // Page Frame
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.1);
+    doc.rect(10, 10, 190, 277, 'S');
+
+    // Header Background
+    doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.rect(0, 0, 210, 45, 'F');
+
+    // Header Text
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("times", "bold");
+    doc.setFontSize(36);
+    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(10);
+    doc.text("LAPORAN CAPAIAN NILAI PER MATA KULIAH", 105, 36, { align: "center" });
+
+    // Identity Section title
+    const idTitle = "IDENTITAS MAHASISWA";
+    const titleY = 58; 
+
+    // Identity Content
+    const identityLabels = [
+      { label: "NAMA LENGKAP", value: (profile?.displayName || '-').toUpperCase() },
+      { label: "NIM / ID SISWA", value: (profile?.nim || '-') },
+      { label: "FAKULTAS", value: (profile?.faculty || 'Fakultas Belum Set') },
+      { label: "PROGRAM STUDI", value: (profile?.programStudy || 'Prodi Belum Set') },
+      { label: "SEMESTER AKTIF", value: String(activeSem) },
+    ];
+
+    const contentStartY = titleY + 11; 
+    const rowHeight = 7; 
+    const contentEndY = contentStartY + ((identityLabels.length - 1) * rowHeight);
+
+    // Draw Box
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(7, titleY - 8, 196, (contentEndY - titleY) + 14, 'S');
+
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.text(idTitle, 11, titleY);
+    const idTitleWidth = doc.getTextWidth(idTitle);
+    doc.line(11, titleY + 2, 11 + idTitleWidth, titleY + 2);
+
+    doc.setFontSize(10);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+
+    identityLabels.forEach((item, i) => {
+      doc.setFont("times", "bold");
+      doc.text(item.label, 11, contentStartY + (i * rowHeight));
+      doc.text(":", 46, contentStartY + (i * rowHeight));
+      doc.setFont("times", "normal");
+      doc.text(item.value, 49, contentStartY + (i * rowHeight));
+    });
+
+    // Course Section title
+    const sectionTitleY = contentEndY + 18;
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setFont("times", "bold");
+    doc.setFontSize(12);
+    doc.text(`MATAKULIAH: ${selectedCourse.name} (${selectedCourse.code})`, 11, sectionTitleY);
+    doc.setLineWidth(0.5);
+    doc.line(11, sectionTitleY + 2, 199, sectionTitleY + 2);
+
+    // Table
+    autoTable(doc, {
+      startY: 125,
+      head: [['PERTEMUAN', 'KEHADIRAN', 'TUTON', 'TMK', 'NILAI SESI']],
+      body: sessions.map(num => [
+        `Pertemuan ${num}`,
+        !isBPro ? (getScoreFromList(evaluations, num, 'Kehadiran') || 0).toFixed(1) : '-',
+        !isBPro ? (getScoreFromList(evaluations, num, 'Tuton') || 0).toFixed(1) : '-',
+        (getScoreFromList(evaluations, num, 'TMK') || 0).toFixed(1),
+        calculateSessionAccumulation(num).toFixed(1)
+      ]),
+      headStyles: { 
+        fillColor: PRIMARY_COLOR as any, 
+        textColor: 255, 
+        halign: 'center', 
+        fontStyle: 'bold', 
+        font: 'times', 
+        fontSize: 10,
+        cellPadding: 4
+      },
+      bodyStyles: { 
+        textColor: TEXT_DARK as any, 
+        font: 'times', 
+        fontSize: 10, 
+        halign: 'center',
+        cellPadding: 4,
+        lineWidth: 0.1,
+        lineColor: [200, 200, 200]
+      },
+      alternateRowStyles: { fillColor: [255, 255, 255] },
+      styles: { valign: 'middle' },
+      columnStyles: {
+        0: { halign: 'left', cellWidth: 40 },
+        1: { halign: 'center', cellWidth: 30 },
+        2: { halign: 'center', cellWidth: 30 },
+        3: { halign: 'center', cellWidth: 30 },
+      },
+      margin: { left: 20, right: 20 }
+    });
+
+    // Accumulation Box
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(1);
+    doc.rect(20, finalY, 170, 20);
+    
+    doc.setFont("times", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.text(`AKUMULASI NILAI AKHIR MATAKULIAH: ${grandTotal.toFixed(1)}`, 105, finalY + 12, { align: "center" });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont("times", "normal");
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    doc.text(`Dokumen ini dicetak secara otomatis melalui Studelle System pada: ${dateStr} pukul ${timeStr}`, 105, 285, { align: "center" });
+
+    doc.save(`Laporan_Evaluasi_${selectedCourse.code}_${profile?.displayName?.replace(/\s+/g, '_')}.pdf`);
+  };
+
   const handleSubmit = async () => {
     if (!userId || !selectedCourse) return;
     
@@ -268,6 +409,13 @@ const SessionEvaluation = () => {
                         </div>
                         <h3 className="text-4xl font-serif font-bold tracking-tight leading-none italic">{selectedCourse.name}</h3>
                     </div>
+                    <button 
+                      onClick={handleDownloadPDF}
+                      className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold tracking-widest px-6 py-3 rounded-xl border border-white/10 transition-all uppercase flex items-center gap-2"
+                    >
+                      <FileText size={16} />
+                      Unduh Laporan PDF
+                    </button>
                  </div>
                  
                  <div className="flex items-center gap-10">

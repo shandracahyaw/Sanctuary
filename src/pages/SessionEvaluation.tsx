@@ -74,7 +74,7 @@ const SessionEvaluation = () => {
     }
   }, [userId, activeSem, activeCourses.length]);
 
-  const courseCategory = selectedCourse?.category || 'Non BPro (Umum)';
+  const courseCategory = selectedCourse?.category || 'Non BPro';
   const isBPro = courseCategory.includes('BPro');
 
   const isTutonAvailable = (session: number, sem: number = activeSem, isB: boolean = isBPro) => {
@@ -103,21 +103,34 @@ const SessionEvaluation = () => {
     const tmk = getScoreFromList(evalsList, session, 'TMK');
 
     if (isB) {
-      return isTMKAvailable(session) ? tmk : 0;
+      if (!isTMKAvailable(session)) return 0;
+      return tmk / 3; // 100% split over 3 TMK sessions
     } else {
-      return (keh * 0.2) + (tut * 0.3) + (tmk * 0.5);
+      const numKeh = (sem >= 1 && sem <= 3) ? 8 : 5;
+      const numTut = (sem >= 1 && sem <= 3) ? 8 : 5;
+      const numTMK = 3;
+
+      const availableKeh = isKehadiranAvailable(session, sem, isB);
+      const availableTut = isTutonAvailable(session, sem, isB);
+      const availableTMK = isTMKAvailable(session);
+      
+      let contribution = 0;
+      if (availableKeh) contribution += (keh * 0.2) / numKeh;
+      if (availableTut) contribution += (tut * 0.3) / numTut;
+      if (availableTMK) contribution += (tmk * 0.5) / numTMK;
+      
+      return contribution;
     }
   };
 
   const calculateCourseAverage = (courseId: string, evalsList: any[], sem: number, category: string) => {
     const isB = category.includes('BPro');
     const sessionsList = [1, 2, 3, 4, 5, 6, 7, 8];
-    const total = sessionsList.reduce((sum, s) => sum + calculateSessionAccumulationForEvaluations(s, evalsList, sem, isB), 0);
-    const activeCount = sessionsList.filter(s => {
-      if (isB) return isTMKAvailable(s);
-      return isTutonAvailable(s, sem, isB) || isTMKAvailable(s);
-    }).length;
-    return activeCount > 0 ? total / activeCount : 0;
+    const accumulations = sessionsList.map(s => calculateSessionAccumulationForEvaluations(s, evalsList, sem, isB));
+    
+    // Total is sum of session accumulations
+    const total = accumulations.reduce((sum, val) => sum + val, 0);
+    return total;
   };
 
   const selectedCourseAvg = calculateCourseAverage(selectedCourse?.id || '', evaluations, activeSem, courseCategory);
@@ -132,30 +145,40 @@ const SessionEvaluation = () => {
     if (!userId || !selectedCourse) return;
     
     setSubmitting(true);
-    const existing = evaluations.find(e => e.session === formData.session && e.type === formData.type);
-    if (existing) {
-      await updateEvaluation(userId, selectedCourse.id, existing.id, { score: formData.score });
-    } else {
-      await addEvaluation(userId, selectedCourse.id, formData);
+    try {
+      const existing = evaluations.find(e => e.session === formData.session && e.type === formData.type);
+      if (existing) {
+        await updateEvaluation(userId, selectedCourse.id, existing.id, { score: formData.score });
+      } else {
+        await addEvaluation(userId, selectedCourse.id, formData);
+      }
+      setFormData({ ...formData, score: 0 });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
     }
-    setFormData({ session: 1, type: 'Kehadiran', score: 0 });
-    setSubmitting(false);
   };
 
   const handleEditCell = async () => {
     if (!userId || !selectedCourse || !editingCell) return;
     setSubmitting(true);
-    if (editingCell.id) {
-      await updateEvaluation(userId, selectedCourse.id, editingCell.id, { score: editValue });
-    } else {
-      await addEvaluation(userId, selectedCourse.id, {
-        session: editingCell.session,
-        type: editingCell.type,
-        score: editValue
-      });
+    try {
+      if (editingCell.id) {
+        await updateEvaluation(userId, selectedCourse.id, editingCell.id, { score: editValue });
+      } else {
+        await addEvaluation(userId, selectedCourse.id, {
+          session: editingCell.session,
+          type: editingCell.type,
+          score: editValue
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setEditingCell(null);
+      setSubmitting(false);
     }
-    setEditingCell(null);
-    setSubmitting(false);
   };
 
   const getScore = (session: number, type: string) => {
@@ -222,8 +245,8 @@ const SessionEvaluation = () => {
            <div className="studelle-card p-10 bg-studelle-burgundy text-white relative overflow-hidden group border-none">
               <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
                  <div className="space-y-3">
-                    <p className="text-xs font-bold tracking-[0.3em] text-white/30 uppercase">{courseCategory}</p>
-                    <h3 className="text-4xl font-serif font-bold tracking-tight leading-none">{selectedCourse.name}</h3>
+                    <p className="text-xs font-bold tracking-[0.3em] text-white/30 uppercase">{courseCategory.replace(' (Umum)', '').replace(' (Pilihan)', '')}</p>
+                    <h3 className="text-4xl font-serif font-bold tracking-tight leading-none italic">{selectedCourse.name}</h3>
                  </div>
                  
                  <div className="flex items-center gap-10">
@@ -268,8 +291,8 @@ const SessionEvaluation = () => {
                      className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
                    >
                      <option value="Kehadiran">Kehadiran</option>
-                     <option value="Tuton">Tuton (Tutorial Online)</option>
-                     <option value="TMK">TMK (Tugas Matakuliah)</option>
+                     <option value="Tuton">Tuton</option>
+                     <option value="TMK">TMK</option>
                    </select>
                 </FieldGroup>
 
@@ -329,7 +352,7 @@ const SessionEvaluation = () => {
 
                           return (
                             <tr key={num} className="group hover:bg-studelle-burgundy/[0.01] transition-colors">
-                               <td className="px-10 py-8 font-bold text-studelle-burgundy">S{num}</td>
+                               <td className="px-10 py-8 font-serif font-bold text-studelle-burgundy italic">S{num}</td>
                                
                                {!isBPro && (
                                  <ScoreCell 

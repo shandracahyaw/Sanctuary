@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PageHeader } from '@/src/components/ui/PageHeader';
 import { Plus, Trash2, Edit3, BookMarked, GraduationCap, Loader2 } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { addCourse, getCourses, deleteCourse, updateCourse } from '@/src/services/firestoreService';
+import { subscribeCourses, addCourse, updateCourse, deleteCourse } from '@/src/services/firestoreService';
 import { cn } from '@/src/lib/utils';
 
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -25,22 +25,14 @@ const Curriculum = () => {
     lecturer: ''
   });
 
-  const fetchCourses = async () => {
-    if (userId) {
-      setLoading(true);
-      const data = await getCourses(userId);
-      setAllCourses(data || []);
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (userId) {
-      if (allCourses.length === 0) setLoading(true);
-      getCourses(userId).then(data => {
+      setLoading(true);
+      const unsubscribe = subscribeCourses(userId, (data) => {
         setAllCourses(data || []);
         setLoading(false);
       });
+      return () => unsubscribe();
     }
   }, [userId]);
 
@@ -58,15 +50,18 @@ const Curriculum = () => {
       semester: activeSem
     };
 
-    if (editingId) {
-      await updateCourse(userId, editingId, courseData);
-    } else {
-      await addCourse(userId, courseData);
+    try {
+      if (editingId) {
+        await updateCourse(userId, editingId, courseData);
+      } else {
+        await addCourse(userId, courseData);
+      }
+      resetForm();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
     }
-
-    resetForm();
-    await fetchCourses();
-    setSubmitting(false);
   };
 
   const resetForm = () => {
@@ -96,8 +91,9 @@ const Curriculum = () => {
 
   const handleDelete = async (id: string) => {
     if (!userId) return;
-    await deleteCourse(userId, id);
-    await fetchCourses();
+    if (window.confirm('Hapus matakuliah ini dari kurikulum?')) {
+      await deleteCourse(userId, id);
+    }
   };
 
   return (
@@ -144,8 +140,8 @@ const Curriculum = () => {
                  onChange={(e) => setFormData({...formData, category: e.target.value})}
                  className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-burgundy/5"
                >
-                 <option value="Non BPro (Umum)">Non BPro (Umum)</option>
-                 <option value="BPro (Pilihan)">BPro (Pilihan)</option>
+                 <option value="Non BPro">Non BPro</option>
+                 <option value="BPro">BPro</option>
                  {activeSem === 7 && <option value="TAP (Tugas Akhir Program)">TAP (Tugas Akhir Program)</option>}
                </select>
             </div>
@@ -264,10 +260,10 @@ const Curriculum = () => {
                       <tr key={course.id} className="hover:bg-studelle-burgundy/[0.03] transition-colors group">
                          <td className="px-12 py-10">
                             <p className="text-sm font-bold text-studelle-accent tracking-tighter">{course.code}</p>
-                            <p className="text-[10px] font-medium text-studelle-burgundy/40 mt-1">{course.category}</p>
+                            <p className="text-[10px] font-medium text-studelle-burgundy/40 mt-1">{course.category?.replace(' (Umum)', '').replace(' (Pilihan)', '')}</p>
                          </td>
                          <td className="px-12 py-10">
-                            <p className="text-lg font-bold text-studelle-burgundy tracking-tight">{course.name}</p>
+                            <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{course.name}</p>
                          </td>
                          <td className="px-12 py-10">
                             <span className={cn(

@@ -12,7 +12,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { getCourses, addGrade, getGrades, deleteGrade, updateGrade } from '@/src/services/firestoreService';
+import { subscribeCourses, addGrade, subscribeGrades, deleteGrade, updateGrade } from '@/src/services/firestoreService';
 import { cn } from '@/src/lib/utils';
 
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -48,20 +48,24 @@ const GradeCard = () => {
   useEffect(() => {
     if (userId) {
       setLoading(true);
-      Promise.all([
-        getCourses(userId),
-        getGrades(userId)
-      ]).then(([coursesData, gradesData]) => {
+      const unsubCourses = subscribeCourses(userId, (coursesData) => {
         setCourses(coursesData || []);
+        setLoading(false);
+      });
+      const unsubGrades = subscribeGrades(userId, (gradesData) => {
         setGrades(gradesData || []);
         setLoading(false);
       });
+      return () => {
+        unsubCourses();
+        unsubGrades();
+      };
     }
   }, [userId]);
 
   const activeCourses = courses.filter(c => c.semester === activeSem);
   const selectedCourse = courses.find(c => c.id === formData.courseId);
-    const activeGrades = grades.filter(g => {
+  const activeGrades = grades.filter(g => {
     const course = courses.find(c => c.id === g.courseId);
     return course?.semester === activeSem;
   }).sort((a, b) => (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || ''));
@@ -69,29 +73,32 @@ const GradeCard = () => {
   const handleSubmit = async () => {
     if (!userId || !formData.courseId) return;
     setSubmitting(true);
-    const course = courses.find(c => c.id === formData.courseId);
-    if (course) {
-      const point = gradeMapping[formData.letterGrade] || 0;
-      const gradeData = {
-        ...formData,
-        courseCode: course.code,
-        courseName: course.name,
-        sks: course.sks,
-        point: point,
-        totalPoint: course.sks * point
-      };
-      
-      if (editingId) {
-        await updateGrade(userId, editingId, gradeData);
-      } else {
-        await addGrade(userId, gradeData);
+    try {
+      const course = courses.find(c => c.id === formData.courseId);
+      if (course) {
+        const point = gradeMapping[formData.letterGrade] || 0;
+        const gradeData = {
+          ...formData,
+          courseCode: course.code,
+          courseName: course.name,
+          sks: course.sks,
+          point: point,
+          totalPoint: course.sks * point
+        };
+        
+        if (editingId) {
+          await updateGrade(userId, editingId, gradeData);
+        } else {
+          await addGrade(userId, gradeData);
+        }
+        
+        resetForm();
       }
-      
-      const updatedGrades = await getGrades(userId);
-      setGrades(updatedGrades);
-      resetForm();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const resetForm = () => {
@@ -116,9 +123,11 @@ const GradeCard = () => {
 
   const handleDelete = async (gradeId: string) => {
     if (!userId) return;
-    await deleteGrade(userId, gradeId);
-    const updatedGrades = await getGrades(userId);
-    setGrades(updatedGrades);
+    try {
+      await deleteGrade(userId, gradeId);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const calculateIPS = (sem: number) => {
@@ -338,7 +347,7 @@ const GradeCard = () => {
                                  <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
                               </td>
                               <td className="px-12 py-10">
-                                 <p className="text-lg font-bold text-studelle-burgundy tracking-tight">{grade.courseName}</p>
+                                 <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
                               </td>
                               <td className="px-12 py-10 text-center text-base font-bold text-studelle-burgundy/40 tracking-widest">{grade.sks}</td>
                               <td className="px-12 py-10 text-center">

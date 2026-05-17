@@ -23,9 +23,9 @@ export const Shell = ({ children }: ShellProps) => {
       <Sidebar />
 
       <main className={cn(
-        "flex-1 p-6 md:p-10 relative z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "flex-1 relative z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-x-hidden",
         isCollapsed ? "ml-24" : "ml-24 md:ml-72",
-        "pt-24 md:pt-10" 
+        "pt-24 md:pt-10 px-6 md:px-10" 
       )}>
         {children}
       </main>

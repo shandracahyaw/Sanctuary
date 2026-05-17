@@ -3,7 +3,7 @@ import { Award, GraduationCap, FileText, Star, Loader2, Search, Filter, Edit3, T
 import { PageHeader } from '@/src/components/ui/PageHeader';
 import { cn } from '@/src/lib/utils';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { getGrades, deleteGrade, updateGrade } from '@/src/services/firestoreService';
+import { subscribeGrades, deleteGrade, updateGrade } from '@/src/services/firestoreService';
 
 const gradeMapping: { [key: string]: number } = {
   'A': 4.00,
@@ -16,6 +16,8 @@ const gradeMapping: { [key: string]: number } = {
   'E': 0.00
 };
 
+const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+
 const Transcript = () => {
   const { profile, user, userId } = useAuth();
   const [grades, setGrades] = useState<any[]>([]);
@@ -23,27 +25,30 @@ const Transcript = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const fetchGrades = async () => {
-    if (userId) {
-      const data = await getGrades(userId);
-      setGrades((data || []).sort((a: any, b: any) => 
-        (a.semester - b.semester) || 
-        (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || '')
-      ));
-    }
-  };
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState<number | 'all'>('all');
 
   useEffect(() => {
     if (userId) {
-      fetchGrades().then(() => setLoading(false));
+      setLoading(true);
+      const unsubscribe = subscribeGrades(userId, (data) => {
+        setGrades((data || []).sort((a: any, b: any) => 
+          (a.semester - b.semester) || 
+          (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || '')
+        ));
+        setLoading(false);
+      });
+      return () => unsubscribe();
     }
   }, [userId]);
 
   const handleDelete = async (id: string) => {
     if (!userId || !window.confirm('Hapus rincian nilai ini?')) return;
-    await deleteGrade(userId, id);
-    await fetchGrades();
+    try {
+      await deleteGrade(userId, id);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const startEdit = (grade: any) => {
@@ -55,23 +60,34 @@ const Transcript = () => {
     if (!userId || !editingId || !editFormData) return;
     setSubmitting(true);
     
-    // Recalculate based on grade
-    const point = gradeMapping[editFormData.letterGrade] || 0;
-    const updatedData = {
-      ...editFormData,
-      point: point,
-      totalPoint: editFormData.sks * point
-    };
+    try {
+      // Recalculate based on grade
+      const point = gradeMapping[editFormData.letterGrade] || 0;
+      const updatedData = {
+        ...editFormData,
+        point: point,
+        totalPoint: editFormData.sks * point
+      };
 
-    await updateGrade(userId, editingId, updatedData);
-    setEditingId(null);
-    setEditFormData(null);
-    await fetchGrades();
-    setSubmitting(false);
+      await updateGrade(userId, editingId, updatedData);
+      setEditingId(null);
+      setEditFormData(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const totalPoints = grades.reduce((sum, g) => sum + g.totalPoint, 0);
-  const totalSKS = grades.reduce((sum, g) => sum + g.sks, 0);
+  const filteredGrades = grades.filter(g => {
+    const matchSearch = (g.courseName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      (g.courseCode || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSem = selectedSemester === 'all' || g.semester === selectedSemester;
+    return matchSearch && matchSem;
+  });
+
+  const totalPoints = filteredGrades.reduce((sum, g) => sum + g.totalPoint, 0);
+  const totalSKS = filteredGrades.reduce((sum, g) => sum + g.sks, 0);
   const ipk = totalSKS > 0 ? (totalPoints / totalSKS).toFixed(2) : "0.00";
   const semestersCount = new Set(grades.map(g => g.semester)).size || profile?.semester || 1;
 
@@ -118,12 +134,20 @@ const Transcript = () => {
            <input 
              type="text" 
              placeholder="Cari Matakuliah..." 
+             value={searchTerm}
+             onChange={(e) => setSearchTerm(e.target.value)}
              className="bg-transparent border-none focus:ring-0 text-base font-medium text-studelle-burgundy placeholder:text-studelle-burgundy/30 w-full"
            />
         </div>
-        <div className="studelle-card p-5 flex items-center gap-5 px-8 cursor-pointer hover:bg-studelle-burgundy/[0.02] transition-all shadow-xl">
-           <Filter size={22} className="text-studelle-burgundy/40" />
-           <span className="text-xs font-bold tracking-widest text-studelle-burgundy/50 uppercase">Filter Semester</span>
+        <div className="md:w-72">
+           <select 
+             value={selectedSemester}
+             onChange={(e) => setSelectedSemester(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+             className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/10 shadow-xl"
+           >
+              <option value="all">Semua Semester</option>
+              {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
+           </select>
         </div>
       </div>
 
@@ -164,8 +188,8 @@ const Transcript = () => {
                           <Loader2 size={48} className="animate-spin text-studelle-burgundy/20 mx-auto" />
                        </td>
                     </tr>
-                  ) : grades.length > 0 ? (
-                    grades.map((grade, index) => {
+                  ) : filteredGrades.length > 0 ? (
+                    filteredGrades.map((grade, index) => {
                       const isEditing = editingId === grade.id;
 
                       return (
@@ -176,7 +200,7 @@ const Transcript = () => {
                              <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
                           </td>
                           <td className="px-12 py-10">
-                             <p className="text-lg font-bold text-studelle-burgundy tracking-tight">{grade.courseName}</p>
+                             <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
                           </td>
                           <td className="px-12 py-10 text-center">
                              {isEditing ? (

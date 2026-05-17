@@ -111,6 +111,16 @@ export const addCourse = async (userId: string, courseData: any) => {
   }
 };
 
+export const subscribeCourses = (userId: string, callback: (data: any[]) => void) => {
+  const colPath = `users/${userId}/courses`;
+  const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, colPath);
+  });
+};
+
 export const getCourses = async (userId: string) => {
   const colPath = `users/${userId}/courses`;
   try {
@@ -184,6 +194,16 @@ export const addGrade = async (userId: string, gradeData: any) => {
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, colPath);
   }
+};
+
+export const subscribeGrades = (userId: string, callback: (data: any[]) => void) => {
+  const colPath = `users/${userId}/grades`;
+  const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, colPath);
+  });
 };
 
 export const getGrades = async (userId: string) => {

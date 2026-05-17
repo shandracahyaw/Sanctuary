@@ -180,6 +180,17 @@ export const getEvaluations = (userId: string, courseId: string, callback: (data
   });
 };
 
+export const getEvaluationsOnce = async (userId: string, courseId: string) => {
+  const colPath = `users/${userId}/courses/${courseId}/evaluations`;
+  try {
+    const q = query(collection(db, colPath), orderBy('session', 'asc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, colPath);
+  }
+};
+
 // Grade Services
 export const addGrade = async (userId: string, gradeData: any) => {
   const colPath = `users/${userId}/grades`;

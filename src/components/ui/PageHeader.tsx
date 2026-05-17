@@ -12,7 +12,7 @@ interface PageHeaderProps {
 export const PageHeader = ({ title, showStatus = false }: PageHeaderProps) => {
   const { profile, user } = useAuth();
   const displayName = profile?.displayName || user?.displayName || 'User';
-  const photoURL = profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8B1D3B&color=fff`;
+  const photoURL = profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=064e3b&color=fff`;
   const today = getIndonesianDate();
 
   return (
@@ -42,7 +42,7 @@ export const PageHeader = ({ title, showStatus = false }: PageHeaderProps) => {
         {showStatus ? (
           <ShieldCheck size={28} className="text-studelle-gold drop-shadow-md shrink-0" />
         ) : (
-          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/20 bg-white/5 shrink-0 shadow-xl ring-2 ring-studelle-burgundy/20">
+          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/20 bg-white/5 shrink-0 shadow-xl ring-2 ring-studelle-emerald/20">
             <img 
               src={photoURL} 
               alt="Profile" 

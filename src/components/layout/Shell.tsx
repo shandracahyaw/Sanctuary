@@ -14,7 +14,7 @@ export const Shell = ({ children }: ShellProps) => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-studelle-burgundy-dark flex relative">
+    <div className="min-h-screen bg-studelle-emerald-dark flex relative">
       <ProfileAutoSync />
       {/* Dynamic Background Noise/Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-pattern fixed" />

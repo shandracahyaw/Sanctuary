@@ -33,7 +33,7 @@ export const Login = () => {
   return (
     <div className="min-h-screen bg-studelle-cream flex items-center justify-center p-4 md:p-8 overflow-hidden relative">
       <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-pattern" />
-      <div className="absolute -top-20 -left-20 w-96 h-96 bg-studelle-burgundy/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -top-20 -left-20 w-96 h-96 bg-studelle-emerald/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-studelle-gold/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
       <motion.div 
@@ -42,7 +42,7 @@ export const Login = () => {
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="max-w-md w-full relative z-10"
       >
-        <div className="studelle-card overflow-hidden bg-studelle-burgundy text-white border-none shadow-2xl relative group">
+        <div className="studelle-card overflow-hidden bg-studelle-emerald text-white border-none shadow-2xl relative group">
           <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay bg-pattern" />
           
           <div className="p-10 md:p-14 flex flex-col items-center text-center space-y-12">
@@ -133,7 +133,7 @@ export const Login = () => {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-studelle-gold text-studelle-burgundy h-14 rounded-2xl text-[10px] font-black tracking-[0.4em] uppercase hover:bg-white hover:scale-[1.02] transition-all flex items-center justify-center gap-4 group active:scale-95 shadow-2xl shadow-black/20 mt-4"
+                  className="w-full bg-studelle-gold text-studelle-emerald h-14 rounded-2xl text-[10px] font-black tracking-[0.4em] uppercase hover:bg-white hover:scale-[1.02] transition-all flex items-center justify-center gap-4 group active:scale-95 shadow-2xl shadow-black/20 mt-4"
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (isRegistering ? <UserPlus size={18} /> : <LogIn size={18} />)}
                   <span>{isRegistering ? 'KONFIRMASI DAFTAR' : 'MASUK SISTEM'}</span>
@@ -143,7 +143,7 @@ export const Login = () => {
               <div className="relative py-4">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
                 <div className="relative flex justify-center text-[8px] uppercase font-bold tracking-[0.4em] text-white/20">
-                  <span className="bg-studelle-burgundy px-4 italic">Social Authentication</span>
+                  <span className="bg-studelle-emerald px-4 italic">Social Authentication</span>
                 </div>
               </div>
 

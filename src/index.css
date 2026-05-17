@@ -5,23 +5,23 @@
   --font-serif: "Playfair Display", serif;
   --font-sans: "Outfit", sans-serif;
   
-  --color-studelle-burgundy: #2D0B13;
-  --color-studelle-burgundy-dark: #1A0509;
+  --color-studelle-emerald: #064e3b;
+  --color-studelle-emerald-dark: #022c22;
   --color-studelle-cream: #FFF9CD;
   --color-studelle-cream-light: #FFFEF0;
-  --color-studelle-accent: #800020;
+  --color-studelle-accent: #059669;
   --color-studelle-gold: #C5A059;
 }
 
 @layer base {
   body {
-    @apply bg-studelle-burgundy-dark text-studelle-burgundy font-sans antialiased;
+    @apply bg-studelle-emerald-dark text-studelle-emerald font-sans antialiased;
   }
 }
 
 @layer components {
   .studelle-card {
-    @apply bg-studelle-cream border border-studelle-burgundy/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden transition-all duration-500 hover:shadow-[0_30px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/5;
+    @apply bg-studelle-cream border border-studelle-emerald/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden transition-all duration-500 hover:shadow-[0_30px_60px_rgba(0,0,0,0.4)] ring-1 ring-white/5;
   }
   
   .studelle-sidebar-item {
@@ -33,7 +33,7 @@
   }
 
   .studelle-input {
-    @apply w-full bg-studelle-cream-light border border-studelle-burgundy/20 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-studelle-accent/20 transition-all;
+    @apply w-full bg-studelle-cream-light border border-studelle-emerald/20 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-studelle-accent/20 transition-all;
   }
 
   .studelle-button {

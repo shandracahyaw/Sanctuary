@@ -120,27 +120,25 @@ const Transcript = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
     const TEXT_DARK = [20, 20, 20];
 
     // Page Frame
-    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.setLineWidth(0.1);
-    doc.rect(5, 5, 200, 287, 'S');
+    // (Frame removed)
 
     // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.rect(0, 0, 210, 45, 'F'); // Increased height
+    doc.rect(0, 0, 210, 40, 'F'); 
 
     // Header Text
     doc.setTextColor(255, 255, 255);
     doc.setFont("times", "bold");
     doc.setFontSize(36);
-    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+    doc.text("STUDELLE ACADEMIC", 105, 20, { align: "center" });
 
     doc.setFont("times", "normal");
     doc.setFontSize(10);
-    doc.text("TRANSKRIP NILAI AKADEMIK KUMULATIF", 105, 36, { align: "center" });
+    doc.text("TRANSKRIP NILAI AKADEMIK KUMULATIF", 105, 27, { align: "center" });
 
     // Identity Section title
     const idTitle = "IDENTITAS MAHASISWA";
@@ -182,14 +180,14 @@ const Transcript = () => {
     });
 
     // Table Header Info
-    const tableTitleY = contentEndY + 18; // Increased gap
+    const tableTitleY = contentEndY + 18; 
+    
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
     doc.setFontSize(12);
-    doc.text("INFORMASI NILAI TRANSKRIP", 10, tableTitleY);
-    doc.setLineWidth(0.5);
-    doc.line(10, tableTitleY + 2, 200, tableTitleY + 2); // Table width: 210 - 20 = 190. Ends at 200.
-
+    doc.text("INFORMASI NILAI TRANSKRIP", 11, tableTitleY);
+    doc.line(11, tableTitleY + 2, 11 + doc.getTextWidth("INFORMASI NILAI TRANSKRIP"), tableTitleY + 2); 
+    
     const fullGradesForPDF = getFullGrades();
     
     // Table
@@ -246,15 +244,17 @@ const Transcript = () => {
     const tPoints = fullGradesForPDF.reduce((sum, g) => sum + (g.totalPoint || 0), 0);
     const tSks = fullGradesForPDF.reduce((sum, g) => sum + (g.sks || 0), 0);
     const tIpk = tSks > 0 ? tPoints / tSks : 0;
+    const tableStartPage = 1;
 
     // Check if summary fits on page
     if (finalY > 230) doc.addPage();
     const summaryY = finalY > 230 ? 20 : finalY + 10;
+    const currentPage = (doc as any).internal.getNumberOfPages();
 
     // Summary Box
-    const boxX = 13;
-    const boxW = 184;
-    const boxH = 35;
+    const boxX = 11;
+    const boxW = 188;
+    const boxH = 32;
     const dividerX = 110;
 
     // Background for Right Section
@@ -301,6 +301,23 @@ const Transcript = () => {
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.text(tIpk.toFixed(2), centerXRight, summaryY + 28, { align: "center" });
 
+    // Dynamic Box for Table & Summary
+    const boxBottomY = summaryY + boxH + 5;
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+    
+    if (currentPage > tableStartPage) {
+      // Draw box on first page
+      doc.setPage(tableStartPage);
+      doc.rect(7, tableTitleY - 8, 196, 280 - (tableTitleY - 8), 'S');
+      
+      // Draw box on current page
+      doc.setPage(currentPage);
+      doc.rect(7, 10, 196, boxBottomY - 10, 'S');
+    } else {
+      doc.rect(7, tableTitleY - 8, 196, boxBottomY - (tableTitleY - 8), 'S');
+    }
+
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
@@ -318,7 +335,7 @@ const Transcript = () => {
       <PageHeader title="Transkrip Akademik" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden bg-studelle-burgundy text-white group shadow-2xl border-none">
+        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden bg-studelle-emerald text-white group shadow-2xl border-none">
            <div className="relative z-10 space-y-2">
               <p className="text-[10px] font-bold tracking-[0.3em] opacity-50 uppercase">Indeks Prestasi Kumulatif</p>
               <h4 className="text-7xl font-serif font-bold tracking-tighter">{ipk}</h4>
@@ -328,10 +345,10 @@ const Transcript = () => {
            </div>
         </div>
 
-        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden border-studelle-burgundy/10 shadow-xl">
+        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden border-studelle-emerald/10 shadow-xl">
            <div className="space-y-2">
-              <p className="text-[10px] font-bold tracking-[0.3em] text-studelle-burgundy/50 uppercase">Total SKS Lulus</p>
-              <h4 className="text-7xl font-serif font-bold text-studelle-burgundy tracking-tighter">{totalSKS}</h4>
+              <p className="text-[10px] font-bold tracking-[0.3em] text-studelle-emerald/50 uppercase">Total SKS Lulus</p>
+              <h4 className="text-7xl font-serif font-bold text-studelle-emerald tracking-tighter">{totalSKS}</h4>
            </div>
            <div className="absolute top-0 right-0 p-6 opacity-5">
               <Star size={80} />
@@ -352,20 +369,20 @@ const Transcript = () => {
       {/* Control Bar */}
       <div className="flex flex-col md:flex-row gap-8">
         <div className="flex-1 studelle-card p-5 flex items-center gap-5 shadow-xl">
-           <Search size={22} className="text-studelle-burgundy/30 ml-2" />
+           <Search size={22} className="text-studelle-emerald/30 ml-2" />
            <input 
              type="text" 
              placeholder="Cari Matakuliah..." 
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
-             className="bg-transparent border-none focus:ring-0 text-base font-medium text-studelle-burgundy placeholder:text-studelle-burgundy/30 w-full"
+             className="bg-transparent border-none focus:ring-0 text-base font-medium text-studelle-emerald placeholder:text-studelle-emerald/30 w-full"
            />
         </div>
         <div className="md:w-72">
            <select 
              value={selectedSemester}
              onChange={(e) => setSelectedSemester(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-             className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/10 shadow-xl"
+             className="studelle-input appearance-none bg-studelle-cream border-studelle-emerald/10 shadow-xl"
            >
               <option value="all">Semua Semester</option>
               {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
@@ -373,24 +390,24 @@ const Transcript = () => {
         </div>
       </div>
 
-      <div className="studelle-card shadow-[0_50px_100px_rgba(0,0,0,0.5)] border-studelle-burgundy/10">
-         <div className="p-10 border-b border-studelle-burgundy/5 flex justify-between items-center">
+      <div className="studelle-card shadow-[0_50px_100px_rgba(0,0,0,0.5)] border-studelle-emerald/10">
+         <div className="p-10 border-b border-studelle-emerald/5 flex justify-between items-center">
             <div className="flex items-center gap-5">
-               <div className="w-14 h-14 bg-studelle-burgundy/5 rounded-[1.25rem] flex items-center justify-center text-studelle-burgundy shadow-inner">
+               <div className="w-14 h-14 bg-studelle-emerald/5 rounded-[1.25rem] flex items-center justify-center text-studelle-emerald shadow-inner">
                   <FileText size={28} />
                </div>
                <div>
-                  <h3 className="text-3xl font-serif font-bold text-studelle-burgundy leading-none">Lembar Transkrip</h3>
-                  <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-1.5">Dokumen Resmi Terverifikasi Sistem</p>
+                  <h3 className="text-3xl font-serif font-bold text-studelle-emerald leading-none">Lembar Transkrip</h3>
+                  <p className="text-sm font-medium tracking-wide text-studelle-emerald/40 mt-1.5">Dokumen Resmi Terverifikasi Sistem</p>
                </div>
             </div>
             <button onClick={handleDownloadPDF} className="studelle-button py-3 px-10 text-[10px]">Cetak Transkrip</button>
          </div>
 
-         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-burgundy/10">
+         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-emerald/10">
             <table className="w-full min-w-[800px] md:min-w-0 text-left">
                 <thead>
-                    <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase bg-studelle-burgundy/[0.01]">
+                    <tr className="border-b border-studelle-emerald/5 text-studelle-emerald/50 text-xs font-bold tracking-widest uppercase bg-studelle-emerald/[0.01]">
                        <th className="px-12 py-8">KODE</th>
                        <th className="px-12 py-8">MATAKULIAH</th>
                        <th className="px-12 py-8 text-center">SKS</th>
@@ -401,11 +418,11 @@ const Transcript = () => {
                        <th className="px-12 py-8 text-right">AKSI</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-studelle-burgundy/5">
+                <tbody className="divide-y divide-studelle-emerald/5">
                    {loading ? (
                      <tr>
                         <td colSpan={8} className="px-12 py-40 text-center">
-                           <Loader2 size={48} className="animate-spin text-studelle-burgundy/20 mx-auto" />
+                           <Loader2 size={48} className="animate-spin text-studelle-emerald/20 mx-auto" />
                         </td>
                      </tr>
                    ) : filteredGrades.length > 0 ? (
@@ -413,15 +430,15 @@ const Transcript = () => {
                        const isEditing = editingId === grade.id;
 
                        return (
-                        <tr key={grade.id} className="hover:bg-studelle-burgundy/[0.01] transition-colors group">
+                        <tr key={grade.id} className="hover:bg-studelle-emerald/[0.01] transition-colors group">
                            <td className="px-12 py-10">
-                              <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
+                              <p className="text-sm font-bold text-studelle-emerald/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
                            </td>
                            <td className="px-12 py-10">
-                              <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
+                              <p className="text-lg font-serif font-bold text-studelle-emerald tracking-tight italic">{grade.courseName}</p>
                               {isEditing ? (
                                 <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-[10px] font-bold text-studelle-burgundy/30 uppercase">Sem:</span>
+                                  <span className="text-[10px] font-bold text-studelle-emerald/30 uppercase">Sem:</span>
                                   <select 
                                     value={editFormData.semester || 1}
                                     onChange={(e) => setEditFormData({ ...editFormData, semester: parseInt(e.target.value) })}
@@ -431,7 +448,7 @@ const Transcript = () => {
                                   </select>
                                 </div>
                               ) : (
-                                <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester || '-'}</p>
+                                <p className="text-[10px] font-bold text-studelle-emerald/30 uppercase tracking-widest">Semester {grade.semester || '-'}</p>
                               )}
                            </td>
                            <td className="px-12 py-10 text-center">
@@ -443,7 +460,7 @@ const Transcript = () => {
                                   className="w-16 studelle-input text-center h-10 p-0"
                                 />
                               ) : (
-                                <p className="text-base font-serif font-bold text-studelle-burgundy/40 tracking-widest">{grade.sks}</p>
+                                <p className="text-base font-serif font-bold text-studelle-emerald/40 tracking-widest">{grade.sks}</p>
                               )}
                            </td>
                            <td className="px-12 py-10 text-center">
@@ -459,8 +476,8 @@ const Transcript = () => {
                                 <span className="text-4xl font-serif font-bold text-studelle-accent tracking-tighter leading-none">{grade.letterGrade}</span>
                               )}
                            </td>
-                           <td className="px-12 py-10 text-center text-base font-bold text-studelle-burgundy/60">
-                              <p className="text-2xl font-serif font-bold text-studelle-burgundy/60 leading-none">{grade.point?.toFixed(2)}</p>
+                           <td className="px-12 py-10 text-center text-base font-bold text-studelle-emerald/60">
+                              <p className="text-2xl font-serif font-bold text-studelle-emerald/60 leading-none">{grade.point?.toFixed(2)}</p>
                            </td>
                            <td className="px-12 py-10 text-center">
                               <p className="text-2xl font-serif font-bold text-studelle-gold leading-none">{grade.totalPoint?.toFixed(2)}</p>
@@ -470,7 +487,7 @@ const Transcript = () => {
                                 "text-[10px] font-bold px-4 py-1.5 rounded-xl tracking-widest uppercase shadow-sm border",
                                 (grade.letterGrade === 'E' || grade.point === 0) 
                                   ? "bg-red-50 text-red-500 border-red-100" 
-                                  : "bg-studelle-burgundy text-white border-studelle-burgundy"
+                                  : "bg-studelle-emerald text-white border-studelle-emerald"
                               )}>
                                 {(grade.letterGrade === 'E' || grade.point === 0) ? 'TL' : 'LL'}
                               </span>
@@ -498,14 +515,14 @@ const Transcript = () => {
                                     <button 
                                       onClick={() => startEdit(grade)}
                                       title="Edit Record"
-                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-emerald/5 flex items-center justify-center text-studelle-emerald/20 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
                                     >
                                        <Edit3 size={20} />
                                     </button>
                                     <button 
                                       onClick={() => handleDelete(grade.id)}
                                       title="Hapus Record"
-                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-emerald/5 flex items-center justify-center text-studelle-emerald/20 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
                                     >
                                        <Trash2 size={20} />
                                     </button>
@@ -519,10 +536,10 @@ const Transcript = () => {
                   ) : (
                     <tr>
                        <td colSpan={8} className="px-12 py-40 text-center space-y-8">
-                          <div className="w-24 h-24 bg-studelle-burgundy/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-burgundy/10 shadow-inner">
+                          <div className="w-24 h-24 bg-studelle-emerald/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-emerald/10 shadow-inner">
                             <FileText size={48} />
                           </div>
-                          <p className="text-xl font-serif font-medium text-studelle-burgundy/40">Belum ada data transkrip yang tersinkronisasi.</p>
+                          <p className="text-xl font-serif font-medium text-studelle-emerald/40">Belum ada data transkrip yang tersinkronisasi.</p>
                        </td>
                     </tr>
                   )}

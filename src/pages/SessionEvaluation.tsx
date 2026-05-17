@@ -165,27 +165,25 @@ const SessionEvaluation = () => {
     if (!selectedCourse || !userId) return;
     
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
     const TEXT_DARK = [20, 20, 20];
 
     // Page Frame
-    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.setLineWidth(0.1);
-    doc.rect(10, 10, 190, 277, 'S');
+    // (Frame removed)
 
     // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.rect(0, 0, 210, 45, 'F');
+    doc.rect(0, 0, 210, 40, 'F');
 
     // Header Text
     doc.setTextColor(255, 255, 255);
     doc.setFont("times", "bold");
     doc.setFontSize(36);
-    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+    doc.text("STUDELLE ACADEMIC", 105, 20, { align: "center" });
 
     doc.setFont("times", "normal");
     doc.setFontSize(10);
-    doc.text("LAPORAN CAPAIAN NILAI PER MATA KULIAH", 105, 36, { align: "center" });
+    doc.text("LAPORAN CAPAIAN NILAI PER MATA KULIAH", 105, 27, { align: "center" });
 
     // Identity Section title
     const idTitle = "IDENTITAS MAHASISWA";
@@ -229,16 +227,16 @@ const SessionEvaluation = () => {
 
     // Course Section title
     const sectionTitleY = contentEndY + 18;
+    
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
     doc.setFontSize(12);
     doc.text(`MATAKULIAH: ${selectedCourse.name} (${selectedCourse.code})`, 11, sectionTitleY);
-    doc.setLineWidth(0.5);
-    doc.line(11, sectionTitleY + 2, 199, sectionTitleY + 2);
+    doc.line(11, sectionTitleY + 2, 11 + doc.getTextWidth(`MATAKULIAH: ${selectedCourse.name} (${selectedCourse.code})`), sectionTitleY + 2);
 
     // Table
     autoTable(doc, {
-      startY: 125,
+      startY: sectionTitleY + 11,
       head: [['PERTEMUAN', 'KEHADIRAN', 'TUTON', 'TMK', 'NILAI SESI']],
       body: sessions.map(num => [
         `Pertemuan ${num}`,
@@ -277,15 +275,21 @@ const SessionEvaluation = () => {
     });
 
     // Accumulation Box
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    const finalY = (doc as any).lastAutoTable.finalY + 12;
     doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.setLineWidth(1);
-    doc.rect(20, finalY, 170, 20);
+    doc.setLineWidth(0.7);
+    doc.rect(13, finalY, 184, 18);
     
     doc.setFont("times", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
-    doc.text(`AKUMULASI NILAI AKHIR MATAKULIAH: ${grandTotal.toFixed(1)}`, 105, finalY + 12, { align: "center" });
+    doc.text(`AKUMULASI NILAI AKHIR MATAKULIAH: ${grandTotal.toFixed(1)}`, 105, finalY + 11, { align: "center" });
+
+    // Dynamic Box for Table & Accumulation
+    const boxBottomY = finalY + 18 + 5;
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(7, sectionTitleY - 8, 196, boxBottomY - (sectionTitleY - 8), 'S');
 
     // Footer
     doc.setFontSize(8);
@@ -349,7 +353,7 @@ const SessionEvaluation = () => {
       <PageHeader title="Evaluasi Sesi Akademik" />
 
       {/* Main Tabs Navigation */}
-      <div className="bg-studelle-burgundy p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-2xl">
+      <div className="bg-studelle-emerald p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-2xl">
         <div className="flex gap-2 min-w-max p-1">
           {semesters.map((sem) => (
             <button
@@ -381,20 +385,20 @@ const SessionEvaluation = () => {
               "px-8 py-4 rounded-[1.5rem] border text-xs font-bold tracking-widest transition-all duration-300",
               (selectedCourseId === course.id || (!selectedCourseId && selectedCourse?.id === course.id))
                 ? "bg-studelle-accent text-white border-studelle-accent shadow-xl scale-105"
-                : "bg-white text-studelle-burgundy/40 border-studelle-burgundy/10 hover:border-studelle-burgundy/30 hover:shadow-lg"
-            )}
-          >
-            {course.name}
-          </button>
-        )) : (
-          <p className="text-sm font-medium tracking-widest text-white/20 py-4 italic">Belum ada matakuliah terdaftar di semester ini</p>
-        )}
-      </div>
+              : "bg-white text-studelle-emerald/40 border-studelle-emerald/10 hover:border-studelle-emerald/30 hover:shadow-lg"
+          )}
+        >
+          {course.name}
+        </button>
+      )) : (
+        <p className="text-sm font-medium tracking-widest text-white/20 py-4 italic">Belum ada matakuliah terdaftar di semester ini</p>
+      )}
+    </div>
 
-      {selectedCourse ? (
-        <div className="grid grid-cols-1 gap-10">
-           {/* Analysis Header */}
-           <div className="studelle-card p-10 bg-studelle-burgundy text-white relative overflow-hidden group border-none">
+    {selectedCourse ? (
+      <div className="grid grid-cols-1 gap-10">
+         {/* Analysis Header */}
+         <div className="studelle-card p-10 bg-studelle-emerald text-white relative overflow-hidden group border-none">
               <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 text-white">
                  <div className="space-y-4">
                     <div className="space-y-2">
@@ -439,7 +443,7 @@ const SessionEvaluation = () => {
                  <div className="w-12 h-12 bg-studelle-accent text-white rounded-2xl flex items-center justify-center shadow-lg">
                     <Plus size={24} />
                  </div>
-                 <h3 className="text-2xl font-serif font-bold text-studelle-burgundy">Log Data Penilaian</h3>
+                 <h3 className="text-2xl font-serif font-bold text-studelle-emerald">Log Data Penilaian</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
@@ -447,7 +451,7 @@ const SessionEvaluation = () => {
                    <select 
                      value={formData.session}
                      onChange={(e) => setFormData({...formData, session: parseInt(e.target.value)})}
-                     className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
+                     className="studelle-input appearance-none bg-studelle-cream border-studelle-emerald/5"
                    >
                      {sessions.map(i => <option key={i} value={i}>{isBPro ? 'Pertemuan' : 'Sesi'} {i}</option>)}
                    </select>
@@ -457,7 +461,7 @@ const SessionEvaluation = () => {
                    <select 
                      value={formData.type}
                      onChange={(e) => setFormData({...formData, type: e.target.value})}
-                     className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
+                     className="studelle-input appearance-none bg-studelle-cream border-studelle-emerald/5"
                    >
                      {!isBPro && <option value="Kehadiran">Kehadiran</option>}
                      {!isBPro && <option value="Tuton">Tuton</option>}
@@ -474,7 +478,7 @@ const SessionEvaluation = () => {
                        const parsed = parseInt(val, 10);
                        setFormData({...formData, score: isNaN(parsed) ? 0 : Math.min(100, Math.max(0, parsed))});
                      }}
-                     className="studelle-input bg-studelle-cream border-studelle-burgundy/5 font-mono"
+                     className="studelle-input bg-studelle-cream border-studelle-emerald/5 font-mono"
                    />
                 </FieldGroup>
 
@@ -490,27 +494,27 @@ const SessionEvaluation = () => {
            </div>
 
            {/* Performance Board Table */}
-           <div className="studelle-card overflow-hidden shadow-2xl border border-studelle-burgundy/10">
-              <div className="p-10 border-b border-studelle-burgundy/5 bg-studelle-cream-light/30">
-                 <h3 className="text-3xl font-serif font-bold text-studelle-burgundy leading-none tracking-tight">Performance Board</h3>
-                 <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-3">Detail Evaluasi Sesi Akademik</p>
+           <div className="studelle-card overflow-hidden shadow-2xl border border-studelle-emerald/10">
+              <div className="p-10 border-b border-studelle-emerald/5 bg-studelle-cream-light/30">
+                 <h3 className="text-3xl font-serif font-bold text-studelle-emerald leading-none tracking-tight">Performance Board</h3>
+                 <p className="text-sm font-medium tracking-wide text-studelle-emerald/40 mt-3">Detail Evaluasi Sesi Akademik</p>
               </div>
 
               <div className="overflow-x-auto">
                  <table className="w-full text-left">
                     <thead>
-                       <tr className="bg-studelle-burgundy/[0.02] text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase">
+                       <tr className="bg-studelle-emerald/[0.02] text-studelle-emerald/50 text-xs font-bold tracking-widest uppercase">
                           <th className="px-10 py-6">{isBPro ? 'PERTEMUAN' : 'SESI'}</th>
-                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">KEHADIRAN (20%)</th>}
-                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">TUTON (30%)</th>}
-                          <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">
+                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-emerald/5">KEHADIRAN (20%)</th>}
+                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-emerald/5">TUTON (30%)</th>}
+                          <th className="px-10 py-6 text-center border-l border-studelle-emerald/5">
                             TMK {isBPro ? '(100%)' : '(50%)'}
                           </th>
-                          <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5 bg-studelle-gold/5">AKUMULASI</th>
-                          <th className="px-10 py-6 text-right border-l border-studelle-burgundy/5">AKSI</th>
+                          <th className="px-10 py-6 text-center border-l border-studelle-emerald/5 bg-studelle-gold/5">AKUMULASI</th>
+                          <th className="px-10 py-6 text-right border-l border-studelle-emerald/5">AKSI</th>
                        </tr>
                     </thead>
-                    <tbody className="divide-y divide-studelle-burgundy/5">
+                    <tbody className="divide-y divide-studelle-emerald/5">
                        {sessions.map((num) => {
                           const sessAccum = calculateSessionAccumulation(num);
                           const keh = getScore(num, 'Kehadiran');
@@ -522,8 +526,8 @@ const SessionEvaluation = () => {
                           const availableTMK = isTMKAvailable(num);
 
                           return (
-                            <tr key={num} className="group hover:bg-studelle-burgundy/[0.01] transition-colors">
-                               <td className="px-10 py-8 font-serif font-bold text-studelle-burgundy italic">S{num}</td>
+                            <tr key={num} className="group hover:bg-studelle-emerald/[0.01] transition-colors">
+                               <td className="px-10 py-8 font-serif font-bold text-studelle-emerald italic">S{num}</td>
                                
                                {!isBPro && (
                                  <ScoreCell 
@@ -568,16 +572,16 @@ const SessionEvaluation = () => {
                                  onCancel={() => setEditingCell(null)}
                                />
 
-                               <td className="px-10 py-8 text-center bg-studelle-gold/5 border-l border-studelle-burgundy/5">
+                               <td className="px-10 py-8 text-center bg-studelle-gold/5 border-l border-studelle-emerald/5">
                                   <span className={cn(
                                     "text-lg font-mono font-bold",
-                                    sessAccum > 0 ? "text-studelle-accent" : "text-studelle-burgundy/20"
+                                    sessAccum > 0 ? "text-studelle-accent" : "text-studelle-emerald/20"
                                   )}>
                                     {sessAccum > 0 ? sessAccum.toFixed(1) : '-'}
                                   </span>
                                </td>
 
-                               <td className="px-10 py-8 text-right border-l border-studelle-burgundy/5">
+                               <td className="px-10 py-8 text-right border-l border-studelle-emerald/5">
                                   <div className="flex justify-end gap-2 transition-opacity">
                                      <button 
                                        onClick={() => {
@@ -599,7 +603,7 @@ const SessionEvaluation = () => {
                           );
                        })}
                        
-                       <tr className="bg-studelle-burgundy text-white font-serif">
+                       <tr className="bg-studelle-emerald text-white font-serif">
                           <td className="px-10 py-8 text-lg font-bold" colSpan={isBPro ? 2 : 4}>GRAND TOTAL NILAI AKHIR</td>
                           <td className="px-10 py-8 text-center text-4xl font-bold text-studelle-gold bg-black/10 border-l border-white/10 tracking-tighter">
                             {grandTotal.toFixed(1)}
@@ -615,14 +619,14 @@ const SessionEvaluation = () => {
         </div>
       ) : activeCourses.length > 0 ? (
         <div className="py-20 text-center">
-           <Loader2 className="animate-spin mx-auto text-studelle-burgundy/20" size={48} />
+           <Loader2 className="animate-spin mx-auto text-studelle-emerald/20" size={48} />
         </div>
       ) : (
         <div className="py-40 studelle-card text-center space-y-8 shadow-2xl">
-           <div className="w-24 h-24 bg-studelle-burgundy/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-burgundy/10">
+           <div className="w-24 h-24 bg-studelle-emerald/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-emerald/10">
               <GraduationCap size={64} />
            </div>
-           <p className="text-xl font-serif font-medium text-studelle-burgundy/30 max-w-md mx-auto">Tentukan matakuliah Anda di menu Kurikulum untuk memulai pemantauan sesi akademik.</p>
+           <p className="text-xl font-serif font-medium text-studelle-emerald/30 max-w-md mx-auto">Tentukan matakuliah Anda di menu Kurikulum untuk memulai pemantauan sesi akademik.</p>
         </div>
       )}
 
@@ -637,11 +641,11 @@ const SessionEvaluation = () => {
 
 const ScoreCell = ({ available, scoreObj, onEdit, isEditing, editValue, onEditValueChange, onSave, onCancel }: any) => {
   if (!available) {
-    return <td className="px-10 py-8 text-center border-l border-studelle-burgundy/5"><span className="text-[10px] font-black tracking-widest text-studelle-burgundy/10">N/A</span></td>;
+    return <td className="px-10 py-8 text-center border-l border-studelle-emerald/5"><span className="text-[10px] font-black tracking-widest text-studelle-emerald/10">N/A</span></td>;
   }
   if (isEditing) {
     return (
-      <td className="px-10 py-8 text-center border-l border-studelle-burgundy/5">
+      <td className="px-10 py-8 text-center border-l border-studelle-emerald/5">
          <div className="flex items-center justify-center gap-2">
             <input type="number" value={editValue} onChange={(e) => onEditValueChange(parseInt(e.target.value) || 0)} className="w-16 h-8 studelle-input text-center p-0 text-xs font-mono" autoFocus />
             <button onClick={onSave} className="text-green-500 hover:scale-110"><Check size={16} /></button>
@@ -651,9 +655,9 @@ const ScoreCell = ({ available, scoreObj, onEdit, isEditing, editValue, onEditVa
     );
   }
   return (
-    <td className="px-10 py-8 text-center cursor-pointer group/cell border-l border-studelle-burgundy/5" onClick={onEdit}>
+    <td className="px-10 py-8 text-center cursor-pointer group/cell border-l border-studelle-emerald/5" onClick={onEdit}>
        <div className="flex items-center justify-center gap-2">
-          <span className={cn("text-base font-mono font-bold", scoreObj.score !== null ? "text-studelle-burgundy" : "text-studelle-burgundy/10")}>{scoreObj.score !== null ? scoreObj.score : '0'}</span>
+          <span className={cn("text-base font-mono font-bold", scoreObj.score !== null ? "text-studelle-emerald" : "text-studelle-emerald/10")}>{scoreObj.score !== null ? scoreObj.score : '0'}</span>
           <Edit3 size={10} className="text-studelle-accent opacity-0 group-hover/cell:opacity-100 transition-opacity" />
        </div>
     </td>
@@ -662,7 +666,7 @@ const ScoreCell = ({ available, scoreObj, onEdit, isEditing, editValue, onEditVa
 
 const FieldGroup = ({ label, children }: { label: string, children: React.ReactNode }) => (
   <div className="space-y-2">
-     <label className="text-[9px] font-black tracking-widest text-studelle-burgundy/40 uppercase ml-2 italic">{label}</label>
+     <label className="text-[9px] font-black tracking-widest text-studelle-emerald/40 uppercase ml-2 italic">{label}</label>
      {children}
   </div>
 );

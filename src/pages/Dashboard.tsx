@@ -59,25 +59,25 @@ const Dashboard = () => {
           {/* Profile Card */}
           <div className="studelle-card p-10 flex flex-col md:flex-row items-center gap-12">
             <div className="relative">
-              <div className="w-36 h-36 rounded-3xl bg-studelle-burgundy-dark p-1 overflow-hidden shadow-2xl rotate-3">
+              <div className="w-36 h-36 rounded-3xl bg-studelle-emerald-dark p-1 overflow-hidden shadow-2xl rotate-3">
                 <img 
-                  src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'User')}&background=2D0B13&color=fff`} 
+                  src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'User')}&background=064e3b&color=fff`} 
                   alt="Profile" 
                   className="w-full h-full object-cover rounded-2xl"
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-studelle-burgundy text-white p-2.5 rounded-xl shadow-lg">
+              <div className="absolute -bottom-2 -right-2 bg-studelle-emerald text-white p-2.5 rounded-xl shadow-lg">
                 <Heart size={18} fill="white" />
               </div>
             </div>
             
             <div className="flex-1 space-y-5 text-center md:text-left">
               <div className="space-y-2">
-                <h2 className="text-4xl font-serif font-bold text-studelle-burgundy leading-none">{profile?.displayName}</h2>
+                <h2 className="text-4xl font-serif font-bold text-studelle-emerald leading-none">{profile?.displayName}</h2>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
-                  <div className="w-12 h-1 bg-studelle-burgundy-dark/10 rounded-full" />
-                  <p className="text-sm font-bold tracking-wide text-studelle-burgundy opacity-40">NIM #{profile?.nim}</p>
+                  <div className="w-12 h-1 bg-studelle-emerald-dark/10 rounded-full" />
+                  <p className="text-sm font-bold tracking-wide text-studelle-emerald opacity-40">NIM #{profile?.nim}</p>
                 </div>
               </div>
               
@@ -92,22 +92,22 @@ const Dashboard = () => {
           {/* Progress Chart Placeholder */}
           <div className="studelle-card p-10 min-h-[350px] flex flex-col">
             <div className="flex items-center gap-4 mb-10">
-              <div className="bg-studelle-burgundy/5 p-3 rounded-2xl text-studelle-burgundy">
+              <div className="bg-studelle-emerald/5 p-3 rounded-2xl text-studelle-emerald">
                 <TrendingUp size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-serif font-bold text-studelle-burgundy">Jalur Perkembangan Akademik</h3>
-                <p className="text-xs font-medium tracking-wide text-studelle-burgundy/40">Komparasi Grafik IPS (Batang) & IPK (Garis)</p>
+                <h3 className="text-2xl font-serif font-bold text-studelle-emerald">Jalur Perkembangan Akademik</h3>
+                <p className="text-xs font-medium tracking-wide text-studelle-emerald/40">Komparasi Grafik IPS (Batang) & IPK (Garis)</p>
               </div>
             </div>
             
             <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-50">
-              <div className="w-20 h-20 border-2 border-dashed border-studelle-burgundy/10 rounded-3xl flex items-center justify-center text-studelle-burgundy/20">
+              <div className="w-20 h-20 border-2 border-dashed border-studelle-emerald/10 rounded-3xl flex items-center justify-center text-studelle-emerald/20">
                 <Star size={40} />
               </div>
               <div className="text-center">
-                 <p className="text-lg font-serif font-medium text-studelle-burgundy">Catatan akademik belum tersedia...</p>
-                 <p className="text-xs font-medium tracking-wide text-studelle-burgundy/40 mt-2">Input data untuk memvisualisasikan progres anda</p>
+                 <p className="text-lg font-serif font-medium text-studelle-emerald">Catatan akademik belum tersedia...</p>
+                 <p className="text-xs font-medium tracking-wide text-studelle-emerald/40 mt-2">Input data untuk memvisualisasikan progres anda</p>
               </div>
             </div>
           </div>
@@ -118,30 +118,30 @@ const Dashboard = () => {
           {/* Cumulative IPK Card */}
           <div className="studelle-card p-10 flex flex-col items-center justify-between text-center min-h-[480px]">
              <div className="space-y-2">
-                <p className="text-xs font-bold tracking-[0.2em] text-studelle-burgundy/30">Capaian Kumulatif</p>
+                <p className="text-xs font-bold tracking-[0.2em] text-studelle-emerald/30">Capaian Kumulatif</p>
                 <div className="w-16 h-1.5 bg-studelle-gold/20 mx-auto rounded-full" />
              </div>
 
              <div className="py-8">
-                <p className="text-sm font-bold tracking-widest text-studelle-burgundy/40 mb-2">Indeks Prestasi</p>
-                <h4 className="text-[130px] font-serif font-bold text-studelle-burgundy tracking-tighter leading-none">{gpa}</h4>
+                <p className="text-sm font-bold tracking-widest text-studelle-emerald/40 mb-2">Indeks Prestasi</p>
+                <h4 className="text-[130px] font-serif font-bold text-studelle-emerald tracking-tighter leading-none">{gpa}</h4>
                 <div className="w-24 h-1.5 bg-studelle-accent/20 mx-auto rounded-full mt-4" />
              </div>
 
-             <div className="w-full grid grid-cols-2 gap-4 bg-studelle-burgundy/[0.03] rounded-3xl p-8 border border-studelle-burgundy/5">
+             <div className="w-full grid grid-cols-2 gap-4 bg-studelle-emerald/[0.03] rounded-3xl p-8 border border-studelle-emerald/5">
                 <div className="space-y-1">
-                   <p className="text-[10px] font-bold tracking-widest text-studelle-burgundy/30">Total SKS</p>
-                   <p className="text-3xl font-serif font-bold text-studelle-burgundy">{totalSks}</p>
+                   <p className="text-[10px] font-bold tracking-widest text-studelle-emerald/30">Total SKS</p>
+                   <p className="text-3xl font-serif font-bold text-studelle-emerald">{totalSks}</p>
                 </div>
                 <div className="space-y-1">
-                   <p className="text-[10px] font-bold tracking-widest text-studelle-burgundy/30">Penyelesaian</p>
-                   <p className="text-3xl font-serif font-bold text-studelle-burgundy">{completionRate}%</p>
+                   <p className="text-[10px] font-bold tracking-widest text-studelle-emerald/30">Penyelesaian</p>
+                   <p className="text-3xl font-serif font-bold text-studelle-emerald">{completionRate}%</p>
                 </div>
              </div>
           </div>
 
           {/* Status Card */}
-          <div className="studelle-card bg-studelle-burgundy text-white p-10 relative group overflow-hidden border-none">
+          <div className="studelle-card bg-studelle-emerald text-white p-10 relative group overflow-hidden border-none">
              <div className="absolute top-0 right-0 p-6 opacity-20 transform group-hover:rotate-12 transition-transform duration-700">
                 <Star size={56} />
              </div>
@@ -182,9 +182,9 @@ const Dashboard = () => {
 };
 
 const Badge = ({ label, value }: { label: string, value: string }) => (
-  <div className="bg-studelle-burgundy/5 px-4 py-2 rounded-xl border border-studelle-burgundy/5 text-center">
-    <p className="text-[9px] font-bold tracking-widest text-studelle-burgundy opacity-30 uppercase">{label}</p>
-    <p className="text-[10px] font-bold text-studelle-burgundy mt-1">{value}</p>
+  <div className="bg-studelle-emerald/5 px-4 py-2 rounded-xl border border-studelle-emerald/5 text-center">
+    <p className="text-[9px] font-bold tracking-widest text-studelle-emerald opacity-30 uppercase">{label}</p>
+    <p className="text-[10px] font-bold text-studelle-emerald mt-1">{value}</p>
   </div>
 );
 

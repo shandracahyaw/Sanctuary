@@ -32,11 +32,11 @@ export const Sidebar = ({ className }: { className?: string }) => {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const displayName = profile?.displayName || user?.displayName || 'User';
-  const photoURL = profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8B1D3B&color=fff`;
+  const photoURL = profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=064e3b&color=fff`;
 
   return (
     <aside className={cn(
-      "bg-studelle-burgundy inset-y-0 left-0 fixed flex flex-col p-6 z-50 transition-all duration-700 ease-in-out overflow-y-auto",
+      "bg-studelle-emerald inset-y-0 left-0 fixed flex flex-col p-6 z-50 transition-all duration-700 ease-in-out overflow-y-auto",
       isCollapsed ? "w-24 px-4 shadow-[10px_0_50px_rgba(0,0,0,0.5)]" : "w-72",
       className
     )}>
@@ -151,33 +151,33 @@ export const Sidebar = ({ className }: { className?: string }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowLogoutConfirm(false)}
-              className="absolute inset-0 bg-studelle-burgundy-dark/95 backdrop-blur-3xl"
+              className="absolute inset-0 bg-studelle-emerald-dark/95 backdrop-blur-3xl"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="studelle-card p-12 max-w-lg w-full bg-studelle-cream border-studelle-burgundy/10 relative z-10 space-y-10 text-center shadow-[0_50px_100px_rgba(0,0,0,0.8)]"
+              className="studelle-card p-12 max-w-lg w-full bg-studelle-cream border-studelle-emerald/10 relative z-10 space-y-10 text-center shadow-[0_50px_100px_rgba(0,0,0,0.8)]"
             >
                <div className="w-24 h-24 bg-red-50 rounded-[2.5rem] flex items-center justify-center text-red-500 mx-auto shadow-inner">
                   <LogOut size={44} />
                </div>
                <div className="space-y-4">
-                  <h3 className="text-4xl font-serif font-bold text-studelle-burgundy italic">Ingin keluar dari sistem?</h3>
-                  <p className="text-sm font-medium text-studelle-burgundy/40 leading-relaxed uppercase tracking-widest px-8">
+                  <h3 className="text-4xl font-serif font-bold text-studelle-emerald italic">Ingin keluar dari sistem?</h3>
+                  <p className="text-sm font-medium text-studelle-emerald/40 leading-relaxed uppercase tracking-widest px-8">
                     Pastikan semua data akademik anda telah tersinkronisasi sebelum meninggalkan portal.
                   </p>
                </div>
                <div className="flex flex-col md:flex-row gap-4">
                   <button 
                     onClick={() => setShowLogoutConfirm(false)}
-                    className="flex-1 h-14 rounded-2xl border-2 border-studelle-burgundy/10 text-studelle-burgundy text-[10px] font-bold tracking-widest uppercase hover:bg-studelle-burgundy/5 transition-all"
+                    className="flex-1 h-14 rounded-2xl border-2 border-studelle-emerald/10 text-studelle-emerald text-[10px] font-bold tracking-widest uppercase hover:bg-studelle-emerald/5 transition-all"
                   >
                     Batal
                   </button>
                   <button 
                     onClick={logout}
-                    className="flex-1 h-14 rounded-2xl bg-studelle-burgundy text-white text-[10px] font-bold tracking-widest uppercase hover:bg-studelle-accent shadow-xl shadow-studelle-burgundy/20 transition-all flex items-center justify-center gap-3"
+                    className="flex-1 h-14 rounded-2xl bg-studelle-emerald text-white text-[10px] font-bold tracking-widest uppercase hover:bg-studelle-accent shadow-xl shadow-studelle-emerald/20 transition-all flex items-center justify-center gap-3"
                   >
                     <span>Ya, Keluar Sekarang</span>
                   </button>

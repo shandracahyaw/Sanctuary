@@ -167,29 +167,25 @@ const GradeCard = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
     const TEXT_DARK = [20, 20, 20];
 
     // Page Frame
-    doc.setPage(1);
-    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.setLineWidth(0.1);
-    doc.rect(5, 5, 200, 287, 'S'); // Much thinner outer margin
+    // (Frame removed)
 
     // Header Background
-    // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.rect(0, 0, 210, 45, 'F'); // Increased height
+    doc.rect(0, 0, 210, 40, 'F'); 
 
     // Header Text
     doc.setTextColor(255, 255, 255);
     doc.setFont("times", "bold");
     doc.setFontSize(36);
-    doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+    doc.text("STUDELLE ACADEMIC", 105, 20, { align: "center" });
 
     doc.setFont("times", "normal");
     doc.setFontSize(10);
-    doc.text("KARTU HASIL STUDI (KHS) SEMESTER", 105, 36, { align: "center" });
+    doc.text("KARTU HASIL STUDI (KHS) SEMESTER", 105, 27, { align: "center" });
 
     // Identity Section title
     const idTitle = "IDENTITAS MAHASISWA";
@@ -232,13 +228,13 @@ const GradeCard = () => {
     });
 
     // Table Header Info
-    const tableTitleY = contentEndY + 18; // Increased gap
+    const tableTitleY = contentEndY + 18; 
+    
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
     doc.setFontSize(12);
-    doc.text(`INFORMASI NILAI KHS SEMESTER ${activeSem}`, 9, tableTitleY);
-    doc.setLineWidth(0.5);
-    doc.line(9, tableTitleY + 2, 201, tableTitleY + 2); 
+    doc.text(`INFORMASI NILAI KHS SEMESTER ${activeSem}`, 11, tableTitleY);
+    doc.line(11, tableTitleY + 2, 11 + doc.getTextWidth(`INFORMASI NILAI KHS SEMESTER ${activeSem}`), tableTitleY + 2); 
     
     // Prepare data: merge activeCourses with grades to show all courses in sem
     const semGradesForPDF = activeCourses.map(course => {
@@ -303,12 +299,16 @@ const GradeCard = () => {
       margin: { left: 9, right: 9 }
     });
 
-    const finalY = ((doc as any).lastAutoTable?.finalY || 105) + 15;
+    const finalYTemp = ((doc as any).lastAutoTable?.finalY || 105) + 12;
+    const tableStartPage = 1;
+    if (finalYTemp > 230) doc.addPage();
+    const finalY = (finalYTemp > 230) ? 20 : finalYTemp;
+    const currentPage = (doc as any).internal.getNumberOfPages();
 
     // Summary Box
-    const boxX = 13;
-    const boxW = 184;
-    const boxH = 35;
+    const boxX = 11;
+    const boxW = 188;
+    const boxH = 32;
     const dividerX = 110;
 
     // Background for Right Section
@@ -352,6 +352,22 @@ const GradeCard = () => {
     doc.text("IP Kumulatif", dividerX + 8, finalY + 26);
     doc.text(`: ${ipk.toFixed(2)}`, dividerX + 45, finalY + 26);
 
+    // Dynamic Box for Table & Summary
+    const boxBottomY = finalY + boxH + 5;
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+
+    if (currentPage > tableStartPage) {
+      // Box on first page
+      doc.setPage(tableStartPage);
+      doc.rect(7, tableTitleY - 8, 196, 280 - (tableTitleY - 8), 'S');
+      // Box on current page
+      doc.setPage(currentPage);
+      doc.rect(7, 10, 196, boxBottomY - 10, 'S');
+    } else {
+      doc.rect(7, tableTitleY - 8, 196, boxBottomY - (tableTitleY - 8), 'S');
+    }
+
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
@@ -369,7 +385,7 @@ const GradeCard = () => {
       <PageHeader title="Kartu Hasil Studi" />
 
       {/* Tabs Container */}
-      <div className="bg-studelle-burgundy p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-2xl">
+      <div className="bg-studelle-emerald p-2 rounded-[2rem] border border-white/5 overflow-x-auto no-scrollbar shadow-2xl">
         <div className="flex gap-2 min-w-max p-1">
           {semesters.map((sem) => (
             <button
@@ -389,7 +405,7 @@ const GradeCard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden bg-studelle-burgundy text-white group border-none shadow-2xl">
+        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden bg-studelle-emerald text-white group border-none shadow-2xl">
            <div className="relative z-10 space-y-2">
               <p className="text-[10px] font-bold tracking-[0.3em] opacity-50">Indeks Prestasi Semester</p>
               <h4 className="text-7xl font-serif font-bold tracking-tighter">{ips.toFixed(2)}</h4>
@@ -402,10 +418,10 @@ const GradeCard = () => {
            </div>
         </div>
 
-        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden border-studelle-burgundy/10 shadow-xl">
+        <div className="studelle-card p-10 flex flex-col justify-between min-h-[180px] relative overflow-hidden border-studelle-emerald/10 shadow-xl">
            <div className="space-y-2">
-              <p className="text-[10px] font-bold tracking-[0.3em] text-studelle-burgundy/50">IP Kumulatif</p>
-              <h4 className="text-7xl font-serif font-bold text-studelle-burgundy tracking-tighter">{ipk.toFixed(2)}</h4>
+              <p className="text-[10px] font-bold tracking-[0.3em] text-studelle-emerald/50">IP Kumulatif</p>
+              <h4 className="text-7xl font-serif font-bold text-studelle-emerald tracking-tighter">{ipk.toFixed(2)}</h4>
            </div>
            <div className="absolute top-0 right-0 p-6 opacity-5">
               <Star size={80} />
@@ -432,23 +448,23 @@ const GradeCard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Form Card */}
         <div className="studelle-card p-10 space-y-10 h-fit shadow-2xl">
-           <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-studelle-burgundy text-white rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-studelle-emerald text-white rounded-2xl flex items-center justify-center shadow-lg">
                  <Plus size={24} />
               </div>
               <div>
-                 <h3 className="text-2xl font-serif font-bold text-studelle-burgundy leading-none">Input Capaian</h3>
-                 <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-1.5">Registrasi Nilai Akademik Baru</p>
+                 <h3 className="text-2xl font-serif font-bold text-studelle-emerald leading-none">Input Capaian</h3>
+                 <p className="text-sm font-medium tracking-wide text-studelle-emerald/40 mt-1.5">Registrasi Nilai Akademik Baru</p>
               </div>
            </div>
 
            <div className="space-y-8">
               <div className="space-y-3">
-                 <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Matakuliah</label>
+                 <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Matakuliah</label>
                  <select 
                    value={formData.courseId}
                    onChange={(e) => setFormData({...formData, courseId: e.target.value})}
-                   className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-burgundy/20"
+                   className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-emerald/20"
                  >
                     <option value="">Klik untuk memilih...</option>
                     {activeCourses.map(c => (
@@ -459,11 +475,11 @@ const GradeCard = () => {
 
               <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-3">
-                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Index (Grade)</label>
+                    <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Index (Grade)</label>
                     <select 
                       value={formData.letterGrade}
                       onChange={(e) => setFormData({...formData, letterGrade: e.target.value})}
-                      className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-burgundy/20"
+                      className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-emerald/20"
                     >
                        {Object.keys(gradeMapping).map(g => (
                          <option key={g} value={g}>{g}</option>
@@ -471,8 +487,8 @@ const GradeCard = () => {
                     </select>
                  </div>
                  <div className="space-y-3">
-                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Nilai Mutu</label>
-                    <div className="studelle-input bg-studelle-burgundy/5 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-burgundy/40">
+                    <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Nilai Mutu</label>
+                    <div className="studelle-input bg-studelle-emerald/5 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-emerald/40">
                        {gradeMapping[formData.letterGrade]?.toFixed(2)}
                     </div>
                  </div>
@@ -480,25 +496,25 @@ const GradeCard = () => {
 
               <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-3">
-                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Bobot SKS</label>
-                    <div className="studelle-input bg-studelle-burgundy/5 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-burgundy/40">
+                    <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Bobot SKS</label>
+                    <div className="studelle-input bg-studelle-emerald/5 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-emerald/40">
                        {selectedCourse?.sks || 0}
                     </div>
                  </div>
                  <div className="space-y-3">
-                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Total Nilai Mutu</label>
-                    <div className="studelle-input bg-studelle-burgundy/10 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-accent">
+                    <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Total Nilai Mutu</label>
+                    <div className="studelle-input bg-studelle-emerald/10 border-none h-14 flex items-center justify-center font-bold text-xl text-studelle-accent">
                        {((selectedCourse?.sks || 0) * (gradeMapping[formData.letterGrade] || 0)).toFixed(2)}
                     </div>
                  </div>
               </div>
 
               <div className="space-y-3">
-                 <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Status Kelulusan</label>
+                 <label className="text-xs font-bold tracking-wide text-studelle-emerald/60 ml-2">Status Kelulusan</label>
                  <select 
                    value={formData.status}
                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                   className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-burgundy/5"
+                   className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-emerald/5"
                  >
                     <option>Lulus (LL)</option>
                     <option>Tidak Lulus (TL)</option>
@@ -515,7 +531,7 @@ const GradeCard = () => {
               {editingId && (
                 <button 
                   onClick={resetForm}
-                  className="w-full text-[10px] font-bold tracking-widest text-studelle-burgundy/40 uppercase hover:text-studelle-burgundy transition-colors"
+                  className="w-full text-[10px] font-bold tracking-widest text-studelle-emerald/40 uppercase hover:text-studelle-emerald transition-colors"
                 >
                   Batal Edit
                 </button>
@@ -525,28 +541,28 @@ const GradeCard = () => {
 
         {/* Table Card */}
         <div className="lg:col-span-2 space-y-6">
-           <div className="studelle-card shadow-[0_50px_100px_rgba(0,0,0,0.5)] border-studelle-burgundy/10">
-              <div className="p-10 bg-studelle-burgundy/[0.01] border-b border-studelle-burgundy/5 flex justify-between items-center">
+           <div className="studelle-card shadow-[0_50px_100px_rgba(0,0,0,0.5)] border-studelle-emerald/10">
+              <div className="p-10 bg-studelle-emerald/[0.01] border-b border-studelle-emerald/5 flex justify-between items-center">
                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-studelle-burgundy/5 rounded-[1.25rem] flex items-center justify-center text-studelle-burgundy shadow-inner">
+                    <div className="w-14 h-14 bg-studelle-emerald/5 rounded-[1.25rem] flex items-center justify-center text-studelle-emerald shadow-inner">
                        <FileSpreadsheet size={28} />
                     </div>
                     <div>
-                       <h3 className="text-3xl font-serif font-bold text-studelle-burgundy leading-none">Semester {activeSem}</h3>
-                       <p className="text-sm font-medium tracking-wide text-studelle-burgundy/40 mt-1.5">Verifikasi Sistem Akademik Terintegrasi</p>
+                       <h3 className="text-3xl font-serif font-bold text-studelle-emerald leading-none">Semester {activeSem}</h3>
+                       <p className="text-sm font-medium tracking-wide text-studelle-emerald/40 mt-1.5">Verifikasi Sistem Akademik Terintegrasi</p>
                     </div>
                  </div>
-                 <div className="bg-studelle-burgundy text-white px-8 py-3 rounded-2xl text-[10px] font-bold tracking-widest shadow-xl flex items-center gap-4">
+                 <div className="bg-studelle-emerald text-white px-8 py-3 rounded-2xl text-[10px] font-bold tracking-widest shadow-xl flex items-center gap-4">
                     <span>{totalSKSActive} SKS Terproses</span>
                     <div className="w-px h-4 bg-white/20" />
                     <button onClick={handleDownloadPDF} className="hover:text-studelle-gold transition-colors uppercase">Cetak</button>
                  </div>
               </div>
 
-              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-burgundy/10">
+              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-emerald/10">
                  <table className="w-full min-w-[800px] md:min-w-0 text-left">
                     <thead>
-                        <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase bg-studelle-burgundy/[0.01]">
+                        <tr className="border-b border-studelle-emerald/5 text-studelle-emerald/50 text-xs font-bold tracking-widest uppercase bg-studelle-emerald/[0.01]">
                            <th className="px-12 py-8">KODE</th>
                            <th className="px-12 py-8">MATAKULIAH</th>
                            <th className="px-12 py-8 text-center">SKS</th>
@@ -557,22 +573,22 @@ const GradeCard = () => {
                            <th className="px-12 py-8 text-right">AKSI</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-studelle-burgundy/5">
+                    <tbody className="divide-y divide-studelle-emerald/5">
                        {activeGrades.length > 0 ? (
                          activeGrades.map((grade) => (
-                           <tr key={grade.id} className="group hover:bg-studelle-burgundy/[0.01] transition-colors">
+                           <tr key={grade.id} className="group hover:bg-studelle-emerald/[0.01] transition-colors">
                               <td className="px-12 py-10">
-                                 <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
+                                 <p className="text-sm font-bold text-studelle-emerald/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
                               </td>
                               <td className="px-12 py-10">
-                                 <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
+                                 <p className="text-lg font-serif font-bold text-studelle-emerald tracking-tight italic">{grade.courseName}</p>
                               </td>
-                              <td className="px-12 py-10 text-center text-base font-bold text-studelle-burgundy/40 tracking-widest">{grade.sks}</td>
+                              <td className="px-12 py-10 text-center text-base font-bold text-studelle-emerald/40 tracking-widest">{grade.sks}</td>
                               <td className="px-12 py-10 text-center">
                                  <span className="text-4xl font-serif font-bold text-studelle-accent tracking-tighter leading-none">{grade.letterGrade}</span>
                               </td>
                               <td className="px-12 py-10 text-center">
-                                 <p className="text-2xl font-serif font-bold text-studelle-burgundy/60 leading-none">{grade.point?.toFixed(2)}</p>
+                                 <p className="text-2xl font-serif font-bold text-studelle-emerald/60 leading-none">{grade.point?.toFixed(2)}</p>
                               </td>
                               <td className="px-12 py-10 text-center">
                                  <p className="text-2xl font-serif font-bold text-studelle-gold leading-none">{grade.totalPoint?.toFixed(2)}</p>
@@ -582,7 +598,7 @@ const GradeCard = () => {
                                    "text-[10px] font-bold px-4 py-1.5 rounded-xl tracking-widest uppercase shadow-sm border",
                                    grade.status?.includes('TL') 
                                      ? "bg-red-50 text-red-500 border-red-100" 
-                                     : "bg-studelle-burgundy text-white border-studelle-burgundy"
+                                     : "bg-studelle-emerald text-white border-studelle-emerald"
                                  )}>
                                    {grade.status?.includes('TL') ? 'TL' : 'LL'}
                                  </span>
@@ -592,7 +608,7 @@ const GradeCard = () => {
                                     <button 
                                       onClick={() => handleEdit(grade)}
                                       title="Edit Nilai"
-                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-emerald/5 flex items-center justify-center text-studelle-emerald/20 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
                                     >
                                        <Edit2 size={20} />
                                     </button>
@@ -603,7 +619,7 @@ const GradeCard = () => {
                                         }
                                       }}
                                       title="Hapus Nilai"
-                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-emerald/5 flex items-center justify-center text-studelle-emerald/20 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
                                     >
                                        <Trash2 size={20} />
                                     </button>
@@ -614,10 +630,10 @@ const GradeCard = () => {
                        ) : (
                          <tr>
                             <td colSpan={8} className="px-12 py-40 text-center space-y-8">
-                               <div className="w-24 h-24 bg-studelle-burgundy/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-burgundy/10 shadow-inner">
+                               <div className="w-24 h-24 bg-studelle-emerald/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-emerald/10 shadow-inner">
                                   <GraduationCap size={48} />
                                </div>
-                               <p className="text-xl font-serif font-medium text-studelle-burgundy/40">Belum ada rincian nilai di Semester {activeSem}.</p>
+                               <p className="text-xl font-serif font-medium text-studelle-emerald/40">Belum ada rincian nilai di Semester {activeSem}.</p>
                             </td>
                          </tr>
                        )}

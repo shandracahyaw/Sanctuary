@@ -3,7 +3,7 @@ import { PageHeader } from '@/src/components/ui/PageHeader';
 import { Download, BookOpen, FileSpreadsheet, FileText, ClipboardCheck, Info, Loader2, Star } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { getCourses, getGrades } from '@/src/services/firestoreService';
+import { getCourses, getGrades, getEvaluationsOnce } from '@/src/services/firestoreService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -13,7 +13,8 @@ const Downloads = () => {
   const [selectedSemesters, setSelectedSemesters] = useState<{ [key: string]: number }>({
     'ARSIP_01': 1,
     'ARSIP_02': 1,
-    'ARSIP_03': 1
+    'ARSIP_03': 1,
+    'ARSIP_04': 1
   });
 
   const getPredikat = (ipk: number) => {
@@ -31,7 +32,7 @@ const Downloads = () => {
     try {
       const doc = new jsPDF();
       const sem = selectedSemesters[type];
-      const PRIMARY_COLOR = [92, 10, 40]; // #5C0A28 Burgundy
+      const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
       const TEXT_DARK = [20, 20, 20];
       const LIGHT_GRAY = [245, 245, 245];
       
@@ -39,16 +40,16 @@ const Downloads = () => {
       const drawHeader = (subtitle: string) => {
         // Red Header Bar
         doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-        doc.rect(0, 0, 210, 45, 'F'); // Increased height
+        doc.rect(0, 0, 210, 40, 'F'); 
         
         doc.setTextColor(255, 255, 255);
         doc.setFont("times", "bold");
         doc.setFontSize(36);
-        doc.text("STUDELLE ACADEMIC", 105, 22, { align: "center" });
+        doc.text("STUDELLE ACADEMIC", 105, 20, { align: "center" });
         
         doc.setFont("times", "normal");
         doc.setFontSize(10);
-        doc.text(subtitle.toUpperCase(), 105, 36, { align: "center" });
+        doc.text(subtitle.toUpperCase(), 105, 27, { align: "center" });
       };
 
       // Helper: Draw Academic Identity
@@ -99,10 +100,10 @@ const Downloads = () => {
 
       // Helper: Draw Summary Box
       const drawSummaryBox = (y: number, stats: { label: string, value: string }[], gpaStats: { label: string, value: string }[]) => {
-        const boxTop = y + 10;
-        const boxX = 13;
-        const boxW = 184;
-        const boxH = 35;
+        const boxTop = y + 8;
+        const boxX = 11;
+        const boxW = 188;
+        const boxH = 32;
         const dividerX = 110;
 
         // Background for Right Section
@@ -156,6 +157,8 @@ const Downloads = () => {
             doc.text(`: ${gs.value}`, dividerX + 45, boxTop + 14 + (i * 12));
           }
         });
+
+        return boxTop + boxH;
       };
 
       // Helper: Draw Footer and Frame
@@ -165,9 +168,7 @@ const Downloads = () => {
           doc.setPage(i);
           
           // Draw Frame
-          doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-          doc.setLineWidth(0.1);
-          doc.rect(5, 5, 200, 287, 'S');
+          // (Frame removed)
 
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
@@ -188,16 +189,16 @@ const Downloads = () => {
           .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
         
         const tableTitleY = nextY + 18; 
+
         doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
         doc.setFont("times", "bold");
         doc.setFontSize(12);
-        doc.text("INFORMASI DAFTAR KURIKULUM", 10, tableTitleY);
-        doc.setLineWidth(0.5);
-        doc.line(10, tableTitleY + 2, 200, tableTitleY + 2);
+        doc.text("INFORMASI DAFTAR KURIKULUM", 11, tableTitleY);
+        doc.line(11, tableTitleY + 2, 11 + doc.getTextWidth("INFORMASI DAFTAR KURIKULUM"), tableTitleY + 2);
 
         autoTable(doc, {
-          startY: tableTitleY + 10, // Gap ~9mm (1.5 lines)
-          head: [['SEMESTER', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'DOSEN PENGAMPU']],
+          startY: tableTitleY + 10, 
+          head: [['SMT', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'DOSEN PENGAMPU']],
           body: semCourses.map(c => [
             String(c.semester),
             (c.code || '-').toUpperCase(),
@@ -230,13 +231,19 @@ const Downloads = () => {
           },
           columnStyles: {
             0: { halign: 'center', cellWidth: 15 },
-            1: { halign: 'center', cellWidth: 25 },
-            2: { halign: 'left', cellWidth: 75 },
-            3: { halign: 'center', cellWidth: 12 },
+            1: { halign: 'center', cellWidth: 22 },
+            2: { halign: 'left', cellWidth: 82.5 },
+            3: { halign: 'center', cellWidth: 15 },
             4: { halign: 'left', cellWidth: 55 },
           },
           margin: { left: 10, right: 10 }
         });
+
+        // Dynamic Box
+        const finalTableY = (doc as any).lastAutoTable?.finalY || tableTitleY + 20;
+        doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+        doc.setLineWidth(0.5);
+        doc.rect(7, tableTitleY - 8, 196, (finalTableY + 5) - (tableTitleY - 8), 'S');
         
       } else if (type === 'ARSIP_02') {
         drawHeader("KARTU HASIL STUDI (KHS) SEMESTER");
@@ -271,15 +278,15 @@ const Downloads = () => {
         const ipk = totalSksKum > 0 ? (totalMutuKum / totalSksKum) : 0;
 
         const tableTitleY = nextY + 18; 
+
         doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
         doc.setFont("times", "bold");
         doc.setFontSize(12);
-        doc.text(`INFORMASI NILAI KHS SEMESTER ${sem}`, 10, tableTitleY);
-        doc.setLineWidth(0.5);
-        doc.line(10, tableTitleY + 2, 201, tableTitleY + 2);
+        doc.text(`INFORMASI NILAI KHS SEMESTER ${sem}`, 11, tableTitleY);
+        doc.line(11, tableTitleY + 2, 11 + doc.getTextWidth(`INFORMASI NILAI KHS SEMESTER ${sem}`), tableTitleY + 2);
 
         autoTable(doc, {
-          startY: tableTitleY + 10, // Gap ~9mm (1.5 lines)
+          startY: tableTitleY + 10, 
           head: [['KODE MK', 'MATAKULIAH', 'SKS', 'NILAI', 'BOBOT', 'MUTU', 'KET']],
           body: semGradesForPDF.map(g => [
             (g.code || '-').toUpperCase(),
@@ -325,8 +332,12 @@ const Downloads = () => {
           margin: { left: 10, right: 9 }
         });
 
-        const finalY = (doc as any).lastAutoTable?.finalY || 105;
-        drawSummaryBox(finalY, [
+        const finalYTemp = (doc as any).lastAutoTable?.finalY || 105;
+        if (finalYTemp > 230) doc.addPage();
+        const finalY = finalYTemp > 230 ? 10 : finalYTemp;
+        const currentPage = (doc as any).internal.getNumberOfPages();
+
+        const finalBoxY = drawSummaryBox(finalY, [
           { label: "TOTAL SKS SEMESTER", value: String(totalSksSem) },
           { label: "TOTAL MUTU SEMESTER", value: totalMutuSem.toFixed(2) },
           { label: "TOTAL SKS KUMULATIF", value: String(totalSksKum) }
@@ -335,7 +346,21 @@ const Downloads = () => {
           { label: "IP Kumulatif", value: ipk.toFixed(2) }
         ]);
 
-      } else {
+        // Dynamic Box
+        doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+        doc.setLineWidth(0.5);
+        if (currentPage > 1) {
+          // Box on first page
+          doc.setPage(1);
+          doc.rect(7, tableTitleY - 8, 196, 280 - (tableTitleY - 8), 'S');
+          // Box on current page
+          doc.setPage(currentPage);
+          doc.rect(7, 10, 196, (finalBoxY + 5) - 10, 'S');
+        } else {
+          doc.rect(7, tableTitleY - 8, 196, (finalBoxY + 5) - (tableTitleY - 8), 'S');
+        }
+
+      } else if (type === 'ARSIP_03') {
         // Transcript (ARSIP_03)
         drawHeader("TRANSKRIP NILAI AKADEMIK KUMULATIF");
         const nextY = drawIdentity();
@@ -353,15 +378,15 @@ const Downloads = () => {
         );
 
         const tableTitleY = nextY + 18; 
+
         doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
         doc.setFont("times", "bold");
         doc.setFontSize(12);
-        doc.text("INFORMASI NILAI TRANSKRIP", 10, tableTitleY);
-        doc.setLineWidth(0.5);
-        doc.line(10, tableTitleY + 2, 200, tableTitleY + 2);
+        doc.text("INFORMASI NILAI TRANSKRIP", 11, tableTitleY);
+        doc.line(11, tableTitleY + 2, 11 + doc.getTextWidth("INFORMASI NILAI TRANSKRIP"), tableTitleY + 2);
 
         autoTable(doc, {
-          startY: tableTitleY + 10, // Gap ~9mm (1.5 lines)
+          startY: tableTitleY + 10, 
           head: [['SMT', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'NILAI', 'BOBOT', 'MUTU', 'KET']],
           body: allGrades.map((g) => [
             `Smt ${g.semester || '-'}`,
@@ -416,14 +441,181 @@ const Downloads = () => {
 
         if (finalY > 230) doc.addPage();
         const summaryY = finalY > 230 ? 20 : finalY + 10;
+        const currentPage = (doc as any).internal.getNumberOfPages();
 
-        drawSummaryBox(summaryY, [
+        const finalBoxY = drawSummaryBox(summaryY, [
           { label: "TOTAL SKS KUMULATIF", value: String(totalSksKum) },
           { label: "TOTAL MUTU KUMULATIF", value: totalMutuKum.toFixed(2) },
           { label: "PREDIKAT KELULUSAN", value: getPredikat(ipk) }
         ], [
           { label: "IP Kumulatif (IPK)", value: ipk.toFixed(2) }
         ]);
+
+        // Dynamic Box
+        doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+        doc.setLineWidth(0.5);
+        if (currentPage > 1) {
+          // Box on first page
+          doc.setPage(1);
+          doc.rect(7, tableTitleY - 8, 196, 280 - (tableTitleY - 8), 'S');
+          // Box on current page
+          doc.setPage(currentPage);
+          doc.rect(7, 10, 196, (finalBoxY + 5) - 10, 'S');
+        } else {
+          doc.rect(7, tableTitleY - 8, 196, (finalBoxY + 5) - (tableTitleY - 8), 'S');
+        }
+      } else if (type === 'ARSIP_04') {
+        // Session Evaluation Download
+        drawHeader("LAPORAN CAPAIAN NILAI PER MATA KULIAH");
+        
+        const courses = (await getCourses(userId)) as any[] || [];
+        const semCourses = (courses || [])
+          .filter(c => c.semester === sem)
+          .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+
+        if (semCourses.length === 0) {
+          drawIdentity(sem);
+          doc.setFontSize(14);
+          doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+          doc.text("TIDAK ADA DATA MATAKULIAH UNTUK SEMESTER INI", 105, 120, { align: "center" });
+        } else {
+          for (let i = 0; i < semCourses.length; i++) {
+            const course = semCourses[i];
+            if (i > 0) doc.addPage();
+            
+            drawHeader("LAPORAN CAPAIAN NILAI PER MATA KULIAH");
+            const nextY = drawIdentity(sem);
+
+            const evaluations = await getEvaluationsOnce(userId, course.id) || [];
+            const sessions = [1, 2, 3, 4, 5, 6, 7, 8];
+            const isBPro = course.category === 'BPro';
+
+            const getScoreFromList = (list: any[], sess: number, t: string) => {
+              const item = list.find(e => e.session === sess && e.type === t);
+              return item ? item.score : 0;
+            };
+
+            const calculateSessionAccumulation = (sessionNum: number) => {
+              if (isBPro) {
+                if (![3, 5, 7].includes(sessionNum)) return 0;
+                const tmk = getScoreFromList(evaluations, sessionNum, 'TMK');
+                return tmk / 3;
+              } else {
+                const keh = getScoreFromList(evaluations, sessionNum, 'Kehadiran');
+                const tut = getScoreFromList(evaluations, sessionNum, 'Tuton');
+                const tmk = getScoreFromList(evaluations, sessionNum, 'TMK');
+
+                const isTutonAvail = (s: number, sm: number, bpro: boolean) => {
+                  if (bpro) return false;
+                  if (sm >= 1 && sm <= 3) return [1, 2, 3, 4, 5, 6, 7, 8].includes(s);
+                  if (sm >= 4 && sm <= 8) return [1, 2, 4, 6, 8].includes(s);
+                  return false;
+                };
+                const isTMKAvail = (s: number) => [3, 5, 7].includes(s);
+
+                const isKeh = isTutonAvail(sessionNum, sem, isBPro);
+                const isTut = isTutonAvail(sessionNum, sem, isBPro);
+                const isTmk = isTMKAvail(sessionNum);
+
+                const numKeh = (sem >= 1 && sem <= 3) ? 8 : 5;
+                const numTut = (sem >= 1 && sem <= 3) ? 8 : 5;
+                const numTmk = 3;
+
+                let contrib = 0;
+                if (isKeh) contrib += (keh * 0.2) / numKeh;
+                if (isTut) contrib += (tut * 0.3) / numTut;
+                if (isTmk) contrib += (tmk * 0.5) / numTmk;
+
+                return contrib;
+              }
+            };
+
+            const calculateGrandTotal = () => {
+              if (isBPro) {
+                const tmkSessions = [3, 5, 7];
+                const tmkSum = tmkSessions.reduce((sum, s) => sum + getScoreFromList(evaluations, s, 'TMK'), 0);
+                return tmkSum / 3;
+              } else {
+                const kehSessions = (sem >= 1 && sem <= 3) ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 4, 6, 8];
+                const tutSessions = (sem >= 1 && sem <= 3) ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 4, 6, 8];
+                const tmkSessions = [3, 5, 7];
+
+                const kehSum = kehSessions.reduce((sum, s) => sum + getScoreFromList(evaluations, s, 'Kehadiran'), 0);
+                const tutSum = tutSessions.reduce((sum, s) => sum + getScoreFromList(evaluations, s, 'Tuton'), 0);
+                const tmkSum = tmkSessions.reduce((sum, s) => sum + getScoreFromList(evaluations, s, 'TMK'), 0);
+
+                const kehAvg = kehSessions.length > 0 ? kehSum / kehSessions.length : 0;
+                const tutAvg = tutSessions.length > 0 ? tutSum / tutSessions.length : 0;
+                const tmkAvg = tmkSessions.length > 0 ? tmkSum / tmkSessions.length : 0;
+
+                return (kehAvg * 0.2) + (tutAvg * 0.3) + (tmkAvg * 0.5);
+              }
+            };
+
+            const grandTotalValue = calculateGrandTotal();
+
+            const sectionTitleY = nextY + 18;
+            doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+            doc.setFont("times", "bold");
+            doc.setFontSize(12);
+            doc.text(`MATAKULIAH: ${course.name} (${course.code})`, 11, sectionTitleY);
+            doc.line(11, sectionTitleY + 2, 11 + doc.getTextWidth(`MATAKULIAH: ${course.name} (${course.code})`), sectionTitleY + 2);
+
+            autoTable(doc, {
+              startY: sectionTitleY + 11,
+              head: [['PERTEMUAN', 'KEHADIRAN', 'TUTON', 'TMK', 'NILAI SESI']],
+              body: sessions.map(num => [
+                `Pertemuan ${num}`,
+                !isBPro ? (getScoreFromList(evaluations, num, 'Kehadiran') || 0).toFixed(1) : '-',
+                !isBPro ? (getScoreFromList(evaluations, num, 'Tuton') || 0).toFixed(1) : '-',
+                (getScoreFromList(evaluations, num, 'TMK') || 0).toFixed(1),
+                calculateSessionAccumulation(num).toFixed(1)
+              ]),
+              headStyles: { 
+                fillColor: PRIMARY_COLOR as any, 
+                textColor: 255, 
+                halign: 'center', 
+                fontStyle: 'bold', 
+                font: 'times', 
+                fontSize: 10,
+                cellPadding: 4
+              },
+              bodyStyles: { 
+                textColor: TEXT_DARK as any, 
+                font: 'times', 
+                fontSize: 10, 
+                halign: 'center',
+                cellPadding: 4,
+                lineWidth: 0.1,
+                lineColor: [200, 200, 200]
+              },
+              alternateRowStyles: { fillColor: [255, 255, 255] },
+              styles: { valign: 'middle' },
+              columnStyles: {
+                0: { halign: 'left', cellWidth: 40 },
+                1: { halign: 'center', cellWidth: 30 },
+                2: { halign: 'center', cellWidth: 30 },
+                3: { halign: 'center', cellWidth: 30 },
+              },
+              margin: { left: 20, right: 20 }
+            });
+
+            const finalTableY = (doc as any).lastAutoTable.finalY + 12;
+            doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+            doc.setLineWidth(0.7);
+            doc.rect(13, finalTableY, 184, 18);
+            
+            doc.setFont("times", "bold");
+            doc.setFontSize(13);
+            doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+            doc.text(`AKUMULASI NILAI AKHIR MATAKULIAH: ${grandTotalValue.toFixed(1)}`, 105, finalTableY + 11, { align: "center" });
+
+            const boxBottomY = finalTableY + 18 + 5;
+            doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+            doc.setLineWidth(0.5);
+            doc.rect(7, sectionTitleY - 8, 196, boxBottomY - (sectionTitleY - 8), 'S');
+          }
+        }
       }
 
       addFooterAndFrame(doc);
@@ -439,7 +631,7 @@ const Downloads = () => {
     <div className="space-y-12 pb-20 pt-6">
       <PageHeader title="Pusat Unduhan" />
 
-      <div className="studelle-card p-20 text-center space-y-6 relative overflow-hidden bg-studelle-burgundy text-white border-none shadow-[0_50px_100px_rgba(0,0,0,0.5)]">
+      <div className="studelle-card p-20 text-center space-y-6 relative overflow-hidden bg-studelle-emerald text-white border-none shadow-[0_50px_100px_rgba(0,0,0,0.5)]">
          <div className="relative z-10">
             <h2 className="text-5xl md:text-6xl font-serif font-bold tracking-tight leading-none">Arsip Digital Terpadu</h2>
             <p className="text-sm font-medium tracking-[0.2em] text-white/40 mt-6 max-w-2xl mx-auto">Sistem Generasi Dokumen Resmi Royale Studelle dengan Enkripsi Digital</p>
@@ -451,24 +643,25 @@ const Downloads = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {[
-          { icon: BookOpen, title: 'Daftar Kurikulum', cat: 'ARSIP_01', accent: 'text-studelle-burgundy' },
-          { icon: FileSpreadsheet, title: 'Kartu Hasil Studi', cat: 'ARSIP_02', accent: 'text-studelle-accent' },
-          { icon: FileText, title: 'Transkrip Nilai', cat: 'ARSIP_03', accent: 'text-studelle-gold' },
+          { icon: BookOpen, title: 'Daftar Kurikulum', cat: 'ARSIP_01', accent: 'text-studelle-emerald' },
+          { icon: ClipboardCheck, title: 'Evaluasi Sesi', cat: 'ARSIP_04', accent: 'text-studelle-accent' },
+          { icon: FileSpreadsheet, title: 'Kartu Hasil Studi', cat: 'ARSIP_02', accent: 'text-studelle-gold' },
+          { icon: FileText, title: 'Transkrip Nilai', cat: 'ARSIP_03', accent: 'text-studelle-emerald' },
         ].map((item, idx) => (
-          <div key={idx} className="studelle-card p-12 flex flex-col justify-between space-y-12 group shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-studelle-burgundy/10 transition-all duration-500 hover:-translate-y-4">
+          <div key={idx} className="studelle-card p-12 flex flex-col justify-between space-y-12 group shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-studelle-emerald/10 transition-all duration-500 hover:-translate-y-4">
              <div className="space-y-8">
                 <div className="flex justify-between items-start">
-                   <p className="text-[10px] font-bold tracking-widest text-studelle-burgundy/30">{item.cat}</p>
+                   <p className="text-[10px] font-bold tracking-widest text-studelle-emerald/30">{item.cat}</p>
                    <item.icon size={28} className={cn("opacity-40 transition-transform group-hover:scale-125 duration-500", item.accent)} />
                 </div>
                 <h4 className={cn("text-4xl font-serif font-bold tracking-tight leading-tight", item.accent)}>{item.title}</h4>
                 {item.cat !== 'ARSIP_03' && (
                   <div className="space-y-4">
-                    <p className="text-xs font-bold text-studelle-burgundy/40 tracking-widest">Pilih Periode</p>
+                    <p className="text-xs font-bold text-studelle-emerald/40 tracking-widest">Pilih Periode</p>
                     <select 
                       value={selectedSemesters[item.cat]}
                       onChange={(e) => setSelectedSemesters({...selectedSemesters, [item.cat]: parseInt(e.target.value)})}
-                      className="studelle-input h-14 px-6 text-sm font-bold bg-studelle-cream border-studelle-burgundy/20 appearance-none cursor-pointer"
+                      className="studelle-input h-14 px-6 text-sm font-bold bg-studelle-cream border-studelle-emerald/20 appearance-none cursor-pointer"
                     >
                         {[1,2,3,4,5,6,7,8].map(i => <option key={i} value={i}>Semester {i}</option>)}
                     </select>
@@ -488,12 +681,12 @@ const Downloads = () => {
       </div>
 
       <div className="studelle-card p-10 border-l-[12px] border-studelle-gold flex flex-col md:flex-row items-center gap-8 shadow-2xl">
-         <div className="w-16 h-16 bg-studelle-gold rounded-3xl flex items-center justify-center text-studelle-burgundy shadow-2xl shadow-studelle-gold/30 shrink-0">
+         <div className="w-16 h-16 bg-studelle-gold rounded-3xl flex items-center justify-center text-studelle-emerald shadow-2xl shadow-studelle-gold/30 shrink-0">
             <Info size={32} />
          </div>
          <div className="space-y-2 text-center md:text-left">
-            <h4 className="text-2xl font-serif font-bold text-studelle-burgundy leading-none">Keamanan Dokumen Digital</h4>
-            <p className="text-base font-serif text-studelle-burgundy/50 max-w-3xl leading-relaxed">
+            <h4 className="text-2xl font-serif font-bold text-studelle-emerald leading-none">Keamanan Dokumen Digital</h4>
+            <p className="text-base font-serif text-studelle-emerald/50 max-w-3xl leading-relaxed">
               Seluruh berkas yang dihasilkan otomatis oleh sistem Royale Studelle tersemat tanda tangan digital (e-Sign) terverifikasi untuk menjamin otentisitas dokumen akademik anda.
             </p>
          </div>

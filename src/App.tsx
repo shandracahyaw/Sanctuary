@@ -24,10 +24,10 @@ const AppContent = () => {
       <div className="min-h-screen bg-studelle-cream flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 mix-blend-multiply bg-pattern pointer-events-none" />
         <div className="space-y-8 flex flex-col items-center relative z-10">
-          <div className="w-16 h-16 border-4 border-studelle-burgundy/5 border-t-studelle-burgundy rounded-full animate-[spin_0.6s_linear_infinite]" />
+          <div className="w-16 h-16 border-4 border-studelle-emerald/5 border-t-studelle-emerald rounded-full animate-[spin_0.6s_linear_infinite]" />
           <div className="text-center animate-pulse">
-            <h2 className="text-3xl font-serif font-bold text-studelle-burgundy tracking-tighter">Studelle</h2>
-            <p className="text-[10px] font-semibold tracking-[0.2em] text-studelle-burgundy/30 mt-3">Mengenkripsi Ruang Akademik Anda</p>
+            <h2 className="text-3xl font-serif font-bold text-studelle-emerald tracking-tighter">Studelle</h2>
+            <p className="text-[10px] font-semibold tracking-[0.2em] text-studelle-emerald/30 mt-3">Mengenkripsi Ruang Akademik Anda</p>
           </div>
         </div>
       </div>

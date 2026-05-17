@@ -3,7 +3,7 @@ import { Award, GraduationCap, FileText, Star, Loader2, Search, Filter, Edit3, T
 import { PageHeader } from '@/src/components/ui/PageHeader';
 import { cn } from '@/src/lib/utils';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { subscribeGrades, deleteGrade, updateGrade } from '@/src/services/firestoreService';
+import { subscribeGrades, deleteGrade, updateGrade, subscribeCourses } from '@/src/services/firestoreService';
 
 const gradeMapping: { [key: string]: number } = {
   'A': 4.00,
@@ -21,6 +21,7 @@ const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 const Transcript = () => {
   const { profile, user, userId } = useAuth();
   const [grades, setGrades] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
@@ -31,16 +32,32 @@ const Transcript = () => {
   useEffect(() => {
     if (userId) {
       setLoading(true);
-      const unsubscribe = subscribeGrades(userId, (data) => {
-        setGrades((data || []).sort((a: any, b: any) => 
-          (a.semester - b.semester) || 
-          (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || '')
-        ));
+      const unsubCourses = subscribeCourses(userId, (coursesData) => {
+        setCourses(coursesData || []);
+      });
+      const unsubGrades = subscribeGrades(userId, (data) => {
+        setGrades((data || []));
         setLoading(false);
       });
-      return () => unsubscribe();
+      return () => {
+        unsubCourses();
+        unsubGrades();
+      };
     }
   }, [userId]);
+
+  const getFullGrades = () => {
+    return grades.map(g => {
+      if (g.semester) return g;
+      const course = courses.find(c => c.id === g.courseId || c.code === g.courseCode);
+      return { ...g, semester: course?.semester };
+    }).sort((a: any, b: any) => 
+      ((a.semester || 0) - (b.semester || 0)) || 
+      (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || '')
+    );
+  };
+
+  const allFullGrades = getFullGrades();
 
   const handleDelete = async (id: string) => {
     if (!userId || !window.confirm('Hapus rincian nilai ini?')) return;
@@ -66,7 +83,7 @@ const Transcript = () => {
       const updatedData = {
         ...editFormData,
         point: point,
-        totalPoint: editFormData.sks * point
+        totalPoint: (editFormData.sks || 0) * point
       };
 
       await updateGrade(userId, editingId, updatedData);
@@ -79,7 +96,7 @@ const Transcript = () => {
     }
   };
 
-  const filteredGrades = grades.filter(g => {
+  const filteredGrades = allFullGrades.filter(g => {
     const matchSearch = (g.courseName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                       (g.courseCode || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchSem = selectedSemester === 'all' || g.semester === selectedSemester;
@@ -169,19 +186,20 @@ const Transcript = () => {
             <table className="w-full min-w-[800px] md:min-w-0 text-left">
                 <thead>
                     <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase bg-studelle-burgundy/[0.01]">
-                       <th className="px-12 py-8">MATAKULIAH</th>
                        <th className="px-12 py-8">KODE</th>
+                       <th className="px-12 py-8">MATAKULIAH</th>
                        <th className="px-12 py-8 text-center">SKS</th>
-                       <th className="px-12 py-8 text-center">JENIS</th>
                        <th className="px-12 py-8 text-center">NILAI</th>
-                       <th className="px-12 py-8 text-center">KATEGORI</th>
+                       <th className="px-12 py-8 text-center">BOBOT</th>
+                       <th className="px-12 py-8 text-center">MUTU</th>
+                       <th className="px-12 py-8 text-center">KET</th>
                        <th className="px-12 py-8 text-right">AKSI</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-studelle-burgundy/5">
                    {loading ? (
                      <tr>
-                        <td colSpan={9} className="px-12 py-40 text-center">
+                        <td colSpan={8} className="px-12 py-40 text-center">
                            <Loader2 size={48} className="animate-spin text-studelle-burgundy/20 mx-auto" />
                         </td>
                      </tr>
@@ -192,11 +210,24 @@ const Transcript = () => {
                        return (
                         <tr key={grade.id} className="hover:bg-studelle-burgundy/[0.01] transition-colors group">
                            <td className="px-12 py-10">
-                              <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
-                              <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester || '-'}</p>
+                              <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
                            </td>
                            <td className="px-12 py-10">
-                              <p className="text-sm font-mono font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
+                              <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
+                              {isEditing ? (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="text-[10px] font-bold text-studelle-burgundy/30 uppercase">Sem:</span>
+                                  <select 
+                                    value={editFormData.semester || 1}
+                                    onChange={(e) => setEditFormData({ ...editFormData, semester: parseInt(e.target.value) })}
+                                    className="studelle-input h-8 py-0 px-2 text-[10px] w-20"
+                                  >
+                                    {semesters.map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                </div>
+                              ) : (
+                                <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester || '-'}</p>
+                              )}
                            </td>
                            <td className="px-12 py-10 text-center">
                               {isEditing ? (
@@ -207,23 +238,15 @@ const Transcript = () => {
                                   className="w-16 studelle-input text-center h-10 p-0"
                                 />
                               ) : (
-                                <p className="text-base font-serif font-bold text-studelle-burgundy/50 tracking-widest">{grade.sks}</p>
+                                <p className="text-base font-serif font-bold text-studelle-burgundy/40 tracking-widest">{grade.sks}</p>
                               )}
-                           </td>
-                           <td className="px-12 py-10 text-center">
-                              <span className={cn(
-                                "text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest",
-                                (grade.type || 'Wajib') === 'Wajib' ? "bg-studelle-burgundy/5 text-studelle-burgundy/60" : "bg-studelle-gold/10 text-studelle-gold"
-                              )}>
-                                {grade.type || 'Wajib'}
-                              </span>
                            </td>
                            <td className="px-12 py-10 text-center">
                               {isEditing ? (
                                 <select 
                                   value={editFormData.letterGrade}
                                   onChange={(e) => setEditFormData({ ...editFormData, letterGrade: e.target.value })}
-                                  className="w-16 studelle-input text-center h-10 p-0 appearance-none bg-white"
+                                  className="w-16 studelle-input text-center h-10 p-0 appearance-none bg-white font-serif font-bold"
                                 >
                                   {Object.keys(gradeMapping).map(g => <option key={g} value={g}>{g}</option>)}
                                 </select>
@@ -231,25 +254,38 @@ const Transcript = () => {
                                 <span className="text-4xl font-serif font-bold text-studelle-accent tracking-tighter leading-none">{grade.letterGrade}</span>
                               )}
                            </td>
+                           <td className="px-12 py-10 text-center text-base font-bold text-studelle-burgundy/60">
+                              <p className="text-2xl font-serif font-bold text-studelle-burgundy/60 leading-none">{grade.point?.toFixed(2)}</p>
+                           </td>
                            <td className="px-12 py-10 text-center">
-                              <p className="text-xs font-bold text-studelle-burgundy/40">{grade.category || 'Non BPro'}</p>
+                              <p className="text-2xl font-serif font-bold text-studelle-gold leading-none">{grade.totalPoint?.toFixed(2)}</p>
+                           </td>
+                           <td className="px-12 py-10 text-center">
+                              <span className={cn(
+                                "text-[10px] font-bold px-4 py-1.5 rounded-xl tracking-widest uppercase shadow-sm border",
+                                (grade.letterGrade === 'E' || grade.point === 0) 
+                                  ? "bg-red-50 text-red-500 border-red-100" 
+                                  : "bg-studelle-burgundy text-white border-studelle-burgundy"
+                              )}>
+                                {(grade.letterGrade === 'E' || grade.point === 0) ? 'TL' : 'LL'}
+                              </span>
                            </td>
                            <td className="px-12 py-10 text-right">
-                             <div className="flex justify-end gap-3">
+                             <div className="flex justify-end gap-3 transition-all">
                                 {isEditing ? (
                                   <>
                                     <button 
                                       onClick={handleUpdate}
                                       disabled={submitting}
-                                      className="w-10 h-10 rounded-xl bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-all shadow-md"
+                                      className="w-12 h-12 rounded-2xl bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-all shadow-md"
                                     >
-                                       {submitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                       {submitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={20} />}
                                     </button>
                                     <button 
                                       onClick={() => { setEditingId(null); setEditFormData(null); }}
-                                      className="w-10 h-10 rounded-xl bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300 transition-all shadow-md"
+                                      className="w-12 h-12 rounded-2xl bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300 transition-all shadow-md"
                                     >
-                                       <X size={16} />
+                                       <X size={20} />
                                     </button>
                                   </>
                                 ) : (
@@ -257,16 +293,16 @@ const Transcript = () => {
                                     <button 
                                       onClick={() => startEdit(grade)}
                                       title="Edit Record"
-                                      className="w-10 h-10 rounded-xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/40 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-studelle-gold hover:bg-white transition-all shadow-sm border border-transparent hover:border-studelle-gold/20"
                                     >
-                                       <Edit3 size={16} />
+                                       <Edit3 size={20} />
                                     </button>
                                     <button 
                                       onClick={() => handleDelete(grade.id)}
                                       title="Hapus Record"
-                                      className="w-10 h-10 rounded-xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/40 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
+                                      className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/20 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
                                     >
-                                       <Trash2 size={16} />
+                                       <Trash2 size={20} />
                                     </button>
                                   </>
                                 )}
@@ -277,8 +313,10 @@ const Transcript = () => {
                     })
                   ) : (
                     <tr>
-                       <td colSpan={10} className="px-12 py-40 text-center space-y-8 grayscale opacity-50">
-                          <FileText size={70} className="mx-auto text-studelle-burgundy/10" />
+                       <td colSpan={8} className="px-12 py-40 text-center space-y-8">
+                          <div className="w-24 h-24 bg-studelle-burgundy/5 rounded-[3rem] mx-auto flex items-center justify-center text-studelle-burgundy/10 shadow-inner">
+                            <FileText size={48} />
+                          </div>
                           <p className="text-xl font-serif font-medium text-studelle-burgundy/40">Belum ada data transkrip yang tersinkronisasi.</p>
                        </td>
                     </tr>

@@ -66,8 +66,16 @@ const GradeCard = () => {
   const activeCourses = courses.filter(c => c.semester === activeSem);
   const selectedCourse = courses.find(c => c.id === formData.courseId);
   const activeGrades = grades.filter(g => {
-    const course = courses.find(c => c.id === g.courseId);
-    return course?.semester === activeSem;
+    // Priority 1: Use the semester stored directly with the grade
+    if (g.semester === activeSem) return true;
+    
+    // Priority 2: Fallback to the current course's semester if it exists and g.semester is missing
+    if (!g.semester) {
+      const course = courses.find(c => c.id === g.courseId);
+      return course?.semester === activeSem;
+    }
+    
+    return false;
   }).sort((a, b) => (a.courseCode || a.courseName || '').localeCompare(b.courseCode || b.courseName || ''));
 
   const handleSubmit = async () => {
@@ -135,8 +143,12 @@ const GradeCard = () => {
 
   const calculateIPS = (sem: number) => {
     const semGrades = grades.filter(g => {
-      const course = courses.find(c => c.id === g.courseId);
-      return course?.semester === sem;
+      if (g.semester === sem) return true;
+      if (!g.semester) {
+        const course = courses.find(c => c.id === g.courseId);
+        return course?.semester === sem;
+      }
+      return false;
     });
     if (semGrades.length === 0) return 0;
     const totalPoints = semGrades.reduce((sum, g) => sum + g.totalPoint, 0);

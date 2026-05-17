@@ -82,6 +82,8 @@ const GradeCard = () => {
           courseCode: course.code,
           courseName: course.name,
           sks: course.sks,
+          type: course.type || 'Wajib',
+          category: course.category || 'Non BPro',
           point: point,
           totalPoint: course.sks * point
         };

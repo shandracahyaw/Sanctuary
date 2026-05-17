@@ -174,16 +174,13 @@ const Profile = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Semester</label>
-                   <input 
-                     type="number" 
-                     value={formData.semester || ''}
-                     onChange={(e) => {
-                       const val = e.target.value;
-                       const parsed = parseInt(val, 10);
-                       setFormData({...formData, semester: isNaN(parsed) ? 1 : parsed});
-                     }}
-                     className="studelle-input bg-studelle-cream border-studelle-burgundy/5"
-                   />
+                   <select 
+                     value={formData.semester}
+                     onChange={(e) => setFormData({...formData, semester: parseInt(e.target.value)})}
+                     className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
+                   >
+                     {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Semester {s}</option>)}
+                   </select>
                 </div>
                 <div className="space-y-3">
                    <label className="text-xs font-bold tracking-wide text-studelle-burgundy/60 ml-2">Status Akademik</label>

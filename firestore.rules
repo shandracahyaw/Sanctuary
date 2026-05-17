@@ -43,7 +43,7 @@ service cloud.firestore {
     }
 
     function isValidCourse(data) {
-      return data.category in ['Non BPro (Umum)', 'BPro (Pilihan)'] &&
+      return data.category in ['Non BPro', 'BPro', 'TAP (Tugas Akhir Program)'] &&
              data.code is string && data.code.size() <= 20 &&
              data.name is string && data.name.size() <= 200 &&
              data.sks is number && data.sks >= 0 && data.sks <= 12 &&

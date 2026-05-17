@@ -167,94 +167,74 @@ const Transcript = () => {
 
          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-studelle-burgundy/10">
             <table className="w-full min-w-[800px] md:min-w-0 text-left">
-               <thead>
-                   <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase bg-studelle-burgundy/[0.01]">
-                      <th className="px-12 py-8 text-center">NO</th>
-                      <th className="px-12 py-8 text-center">SMT</th>
-                      <th className="px-12 py-8">KODE</th>
-                      <th className="px-12 py-8">MATAKULIAH</th>
-                      <th className="px-12 py-8 text-center">SKS</th>
-                      <th className="px-12 py-8 text-center">NILAI</th>
-                      <th className="px-12 py-8 text-center">BOBOT</th>
-                      <th className="px-12 py-8 text-center">MUTU</th>
-                      <th className="px-12 py-8 text-center">KET</th>
-                      <th className="px-12 py-8 text-right">AKSI</th>
-                   </tr>
-               </thead>
-               <tbody className="divide-y divide-studelle-burgundy/5">
-                  {loading ? (
-                    <tr>
-                       <td colSpan={10} className="px-12 py-40 text-center">
-                          <Loader2 size={48} className="animate-spin text-studelle-burgundy/20 mx-auto" />
-                       </td>
+                <thead>
+                    <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase bg-studelle-burgundy/[0.01]">
+                       <th className="px-12 py-8">MATAKULIAH</th>
+                       <th className="px-12 py-8">KODE</th>
+                       <th className="px-12 py-8 text-center">SKS</th>
+                       <th className="px-12 py-8 text-center">JENIS</th>
+                       <th className="px-12 py-8 text-center">NILAI</th>
+                       <th className="px-12 py-8 text-center">KATEGORI</th>
+                       <th className="px-12 py-8 text-right">AKSI</th>
                     </tr>
-                  ) : filteredGrades.length > 0 ? (
-                    filteredGrades.map((grade, index) => {
-                      const isEditing = editingId === grade.id;
+                </thead>
+                <tbody className="divide-y divide-studelle-burgundy/5">
+                   {loading ? (
+                     <tr>
+                        <td colSpan={9} className="px-12 py-40 text-center">
+                           <Loader2 size={48} className="animate-spin text-studelle-burgundy/20 mx-auto" />
+                        </td>
+                     </tr>
+                   ) : filteredGrades.length > 0 ? (
+                     filteredGrades.map((grade, index) => {
+                       const isEditing = editingId === grade.id;
 
-                      return (
-                       <tr key={grade.id} className="hover:bg-studelle-burgundy/[0.01] transition-colors group">
-                          <td className="px-12 py-10 text-center font-bold text-studelle-burgundy/40">{index + 1}</td>
-                          <td className="px-12 py-10 text-center font-bold text-studelle-burgundy/60">Smt {grade.semester}</td>
-                          <td className="px-12 py-10">
-                             <p className="text-sm font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
-                          </td>
-                          <td className="px-12 py-10">
-                             <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
-                          </td>
-                          <td className="px-12 py-10 text-center">
-                             {isEditing ? (
-                               <input 
-                                 type="number"
-                                 value={editFormData.sks}
-                                 onChange={(e) => setEditFormData({ ...editFormData, sks: parseInt(e.target.value) || 0 })}
-                                 className="w-16 studelle-input text-center h-10 p-0"
-                               />
-                             ) : (
-                               <p className="text-base font-bold text-studelle-burgundy/50 tracking-widest">{grade.sks}</p>
-                             )}
-                          </td>
-                          <td className="px-12 py-10 text-center">
-                             {isEditing ? (
-                               <select 
-                                 value={editFormData.letterGrade}
-                                 onChange={(e) => setEditFormData({ ...editFormData, letterGrade: e.target.value })}
-                                 className="w-16 studelle-input text-center h-10 p-0 appearance-none bg-white"
-                               >
-                                 {Object.keys(gradeMapping).map(g => <option key={g} value={g}>{g}</option>)}
-                               </select>
-                             ) : (
-                               <span className="text-4xl font-serif font-bold text-studelle-accent tracking-tighter leading-none">{grade.letterGrade}</span>
-                             )}
-                          </td>
-                          <td className="px-12 py-10 text-center text-lg font-bold text-studelle-burgundy/40">
-                            {isEditing ? (gradeMapping[editFormData.letterGrade] || 0)?.toFixed(2) : grade.point?.toFixed(2)}
-                          </td>
-                           <td className="px-12 py-10 text-center text-lg font-bold text-studelle-gold">
-                             {isEditing ? (editFormData.sks * (gradeMapping[editFormData.letterGrade] || 0))?.toFixed(2) : grade.totalPoint?.toFixed(2)}
+                       return (
+                        <tr key={grade.id} className="hover:bg-studelle-burgundy/[0.01] transition-colors group">
+                           <td className="px-12 py-10">
+                              <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
+                              <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester}</p>
                            </td>
-                          <td className="px-12 py-10 text-center">
-                             {isEditing ? (
-                               <select 
-                                 value={editFormData.status}
-                                 onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                 className="text-[10px] studelle-input h-10 p-0 appearance-none bg-white"
+                           <td className="px-12 py-10">
+                              <p className="text-sm font-mono font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>
+                           </td>
+                           <td className="px-12 py-10 text-center">
+                              {isEditing ? (
+                                <input 
+                                  type="number"
+                                  value={editFormData.sks}
+                                  onChange={(e) => setEditFormData({ ...editFormData, sks: parseInt(e.target.value) || 0 })}
+                                  className="w-16 studelle-input text-center h-10 p-0"
+                                />
+                              ) : (
+                                <p className="text-base font-serif font-bold text-studelle-burgundy/50 tracking-widest">{grade.sks}</p>
+                              )}
+                           </td>
+                           <td className="px-12 py-10 text-center">
+                              <span className={cn(
+                                "text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest",
+                                (grade.type || 'Wajib') === 'Wajib' ? "bg-studelle-burgundy/5 text-studelle-burgundy/60" : "bg-studelle-gold/10 text-studelle-gold"
+                              )}>
+                                {grade.type || 'Wajib'}
+                              </span>
+                           </td>
+                           <td className="px-12 py-10 text-center">
+                              {isEditing ? (
+                                <select 
+                                  value={editFormData.letterGrade}
+                                  onChange={(e) => setEditFormData({ ...editFormData, letterGrade: e.target.value })}
+                                  className="w-16 studelle-input text-center h-10 p-0 appearance-none bg-white"
                                 >
-                                  <option>Lulus (LL)</option>
-                                  <option>Tidak Lulus (TL)</option>
-                               </select>
-                             ) : (
-                               <span className={cn(
-                                 "text-[10px] font-bold px-4 py-1.5 rounded-xl tracking-widest uppercase shadow-sm border",
-                                 grade.status?.includes('TL') 
-                                   ? "bg-red-50 text-red-500 border-red-100" 
-                                   : "bg-studelle-burgundy text-white border-studelle-burgundy"
-                               )}>
-                                 {grade.status?.includes('TL') ? 'TL' : 'LL'}
-                               </span>
-                             )}
-                          </td>
-                          <td className="px-12 py-10 text-right">
+                                  {Object.keys(gradeMapping).map(g => <option key={g} value={g}>{g}</option>)}
+                                </select>
+                              ) : (
+                                <span className="text-4xl font-serif font-bold text-studelle-accent tracking-tighter leading-none">{grade.letterGrade}</span>
+                              )}
+                           </td>
+                           <td className="px-12 py-10 text-center">
+                              <p className="text-xs font-bold text-studelle-burgundy/40">{grade.category || 'Non BPro'}</p>
+                           </td>
+                           <td className="px-12 py-10 text-right">
                              <div className="flex justify-end gap-3">
                                 {isEditing ? (
                                   <>

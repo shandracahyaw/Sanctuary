@@ -17,7 +17,7 @@ const Curriculum = () => {
 
   // Form state
   const [formData, setFormData] = useState({
-    category: 'Non BPro (Umum)',
+    category: 'Non BPro',
     type: 'Wajib',
     code: '',
     name: '',
@@ -66,7 +66,7 @@ const Curriculum = () => {
 
   const resetForm = () => {
     setFormData({
-      category: 'Non BPro (Umum)',
+      category: 'Non BPro',
       type: 'Wajib',
       code: '',
       name: '',
@@ -185,8 +185,8 @@ const Curriculum = () => {
                  onChange={(e) => setFormData({...formData, type: e.target.value})}
                  className="studelle-input appearance-none cursor-pointer bg-studelle-cream border-studelle-burgundy/20"
                >
-                 <option>Wajib</option>
-                 <option>Pilihan</option>
+                 <option value="Wajib">Wajib</option>
+                 <option value="Pilihan">Pilihan</option>
                </select>
             </div>
             <div className="space-y-3">
@@ -241,9 +241,9 @@ const Curriculum = () => {
                <thead>
                   <tr className="border-b border-studelle-burgundy/5 text-studelle-burgundy/40 text-xs font-bold tracking-widest bg-studelle-burgundy/[0.01]">
                      <th className="px-12 py-8">KODE</th>
-                     <th className="px-12 py-8">NAMA</th>
-                     <th className="px-12 py-8">JENIS</th>
-                     <th className="px-12 py-8 text-center">BOBOT</th>
+                     <th className="px-12 py-8">NAMA MATKUL</th>
+                     <th className="px-12 py-8 text-center">SKS</th>
+                     <th className="px-12 py-8 text-center uppercase">Jenis</th>
                      <th className="px-12 py-8">DOSEN</th>
                      <th className="px-12 py-8 text-right">AKSI</th>
                   </tr>
@@ -259,25 +259,25 @@ const Curriculum = () => {
                     activeCourses.map((course) => (
                       <tr key={course.id} className="hover:bg-studelle-burgundy/[0.03] transition-colors group">
                          <td className="px-12 py-10">
-                            <p className="text-sm font-bold text-studelle-accent tracking-tighter">{course.code}</p>
-                            <p className="text-[10px] font-medium text-studelle-burgundy/40 mt-1">{course.category?.replace(' (Umum)', '').replace(' (Pilihan)', '')}</p>
+                            <p className="text-sm font-mono font-bold text-studelle-accent tracking-tighter">{course.code}</p>
+                            <p className="text-[10px] font-medium text-studelle-burgundy/40 mt-1">{course.category}</p>
                          </td>
                          <td className="px-12 py-10">
                             <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{course.name}</p>
-                         </td>
-                         <td className="px-12 py-10">
+                          </td>
+                          <td className="px-12 py-10 text-center">
+                             <div className="inline-flex flex-col items-center">
+                                <p className="text-3xl font-serif font-bold text-studelle-burgundy leading-none">{course.sks}</p>
+                                <span className="text-[10px] font-bold text-studelle-burgundy/30 mt-1">SKS</span>
+                             </div>
+                          </td>
+                         <td className="px-12 py-10 text-center">
                             <span className={cn(
                                "text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest",
                                course.type === 'Wajib' ? "bg-studelle-burgundy/5 text-studelle-burgundy/60" : "bg-studelle-gold/10 text-studelle-gold"
                             )}>
                                {course.type || 'Wajib'}
                             </span>
-                         </td>
-                         <td className="px-12 py-10 text-center">
-                            <div className="inline-flex flex-col items-center">
-                               <p className="text-3xl font-serif font-bold text-studelle-burgundy leading-none">{course.sks}</p>
-                               <span className="text-[10px] font-bold text-studelle-burgundy/30 mt-1">SKS</span>
-                            </div>
                          </td>
                          <td className="px-12 py-10">
                             <p className="text-sm font-serif font-medium text-studelle-burgundy/60">{course.lecturer || '-'}</p>
@@ -293,9 +293,7 @@ const Curriculum = () => {
                                </button>
                                <button 
                                  onClick={() => {
-                                   if(window.confirm('Hapus matakuliah ini?')) {
-                                     handleDelete(course.id);
-                                   }
+                                   handleDelete(course.id);
                                  }}
                                  title="Hapus Matakuliah"
                                  className="w-12 h-12 rounded-2xl bg-studelle-burgundy/5 flex items-center justify-center text-studelle-burgundy/40 hover:text-red-500 hover:bg-white transition-all shadow-sm border border-transparent hover:border-red-100"
@@ -332,7 +330,7 @@ const Curriculum = () => {
       </div>
 
       <footer className="pt-12 border-t border-white/5 text-center">
-        <p className="text-[11px] font-medium tracking-[0.1em] text-white/20">
+        <p className="text-[11px] font-medium tracking-[0.1em] text-white/20 uppercase">
           Studelle Royale Sanctuary — Transparansi Kurikulum Terintegrasi © 2026
         </p>
       </footer>

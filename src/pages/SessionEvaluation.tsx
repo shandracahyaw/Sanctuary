@@ -75,11 +75,11 @@ const SessionEvaluation = () => {
   }, [userId, activeSem, activeCourses.length]);
 
   const courseCategory = selectedCourse?.category || 'Non BPro';
-  const isBPro = courseCategory.includes('BPro');
+  const isBPro = courseCategory === 'BPro';
 
-  const isTutonAvailable = (session: number, sem: number = activeSem, isB: boolean = isBPro) => {
-    if (isB) return false;
-    if (sem >= 1 && sem <= 3) return true;
+  const isTutonAvailable = (session: number, sem: number = activeSem, currentIsBPro: boolean = isBPro) => {
+    if (currentIsBPro) return false;
+    if (sem >= 1 && sem <= 3) return [1, 2, 3, 4, 5, 6, 7, 8].includes(session);
     if (sem >= 4 && sem <= 8) return [1, 2, 4, 6, 8].includes(session);
     return false;
   };
@@ -88,58 +88,75 @@ const SessionEvaluation = () => {
     return [3, 5, 7].includes(session);
   };
 
-  const isKehadiranAvailable = (session: number, sem: number = activeSem, isB: boolean = isBPro) => {
-    return isTutonAvailable(session, sem, isB);
+  const isKehadiranAvailable = (session: number, sem: number = activeSem, currentIsBPro: boolean = isBPro) => {
+    return isTutonAvailable(session, sem, currentIsBPro);
   };
 
   const getScoreFromList = (list: any[], session: number, type: string) => {
-    const item = list.find(e => e.session === session && (e.type === type || (type === 'Tuton' && e.type === 'Tugas / Tuton') || (type === 'Kehadiran' && e.type === 'Kehadiran')));
+    const item = list.find(e => e.session === session && e.type === type);
     return item ? item.score : 0;
   };
 
-  const calculateSessionAccumulationForEvaluations = (session: number, evalsList: any[], sem: number, isB: boolean) => {
-    const keh = getScoreFromList(evalsList, session, 'Kehadiran');
-    const tut = getScoreFromList(evalsList, session, 'Tuton');
-    const tmk = getScoreFromList(evalsList, session, 'TMK');
-
-    if (isB) {
-      if (!isTMKAvailable(session)) return 0;
-      return tmk / 3; // 100% split over 3 TMK sessions
+  const calculateGrandTotal = (evalsList: any[], sem: number, category: string) => {
+    const currentIsBPro = category === 'BPro';
+    
+    if (currentIsBPro) {
+      const tmkSessions = [3, 5, 7];
+      const tmkSum = tmkSessions.reduce((sum, s) => sum + getScoreFromList(evalsList, s, 'TMK'), 0);
+      return tmkSum / 3;
     } else {
-      const numKeh = (sem >= 1 && sem <= 3) ? 8 : 5;
-      const numTut = (sem >= 1 && sem <= 3) ? 8 : 5;
-      const numTMK = 3;
+      const kehSessions = (sem >= 1 && sem <= 3) ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 4, 6, 8];
+      const tutSessions = (sem >= 1 && sem <= 3) ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 4, 6, 8];
+      const tmkSessions = [3, 5, 7];
 
-      const availableKeh = isKehadiranAvailable(session, sem, isB);
-      const availableTut = isTutonAvailable(session, sem, isB);
-      const availableTMK = isTMKAvailable(session);
-      
-      let contribution = 0;
-      if (availableKeh) contribution += (keh * 0.2) / numKeh;
-      if (availableTut) contribution += (tut * 0.3) / numTut;
-      if (availableTMK) contribution += (tmk * 0.5) / numTMK;
-      
-      return contribution;
+      const kehSum = kehSessions.reduce((sum, s) => sum + getScoreFromList(evalsList, s, 'Kehadiran'), 0);
+      const tutSum = tutSessions.reduce((sum, s) => sum + getScoreFromList(evalsList, s, 'Tuton'), 0);
+      const tmkSum = tmkSessions.reduce((sum, s) => sum + getScoreFromList(evalsList, s, 'TMK'), 0);
+
+      const kehAvg = kehSessions.length > 0 ? kehSum / kehSessions.length : 0;
+      const tutAvg = tutSessions.length > 0 ? tutSum / tutSessions.length : 0;
+      const tmkAvg = tmkSessions.length > 0 ? tmkSum / tmkSessions.length : 0;
+
+      return (kehAvg * 0.2) + (tutAvg * 0.3) + (tmkAvg * 0.5);
     }
   };
 
-  const calculateCourseAverage = (courseId: string, evalsList: any[], sem: number, category: string) => {
-    const isB = category.includes('BPro');
-    const sessionsList = [1, 2, 3, 4, 5, 6, 7, 8];
-    const accumulations = sessionsList.map(s => calculateSessionAccumulationForEvaluations(s, evalsList, sem, isB));
-    
-    // Total is sum of session accumulations
-    const total = accumulations.reduce((sum, val) => sum + val, 0);
-    return total;
-  };
-
-  const selectedCourseAvg = calculateCourseAverage(selectedCourse?.id || '', evaluations, activeSem, courseCategory);
+  const selectedCourseAvg = calculateGrandTotal(evaluations, activeSem, courseCategory);
   
   const semesterAverage = activeCourses.length > 0 
-    ? activeCourses.reduce((sum, c) => sum + calculateCourseAverage(c.id, semesterEvals[c.id] || [], activeSem, c.category || ''), 0) / activeCourses.length
+    ? activeCourses.reduce((sum, c) => sum + calculateGrandTotal(semesterEvals[c.id] || [], activeSem, c.category || ''), 0) / activeCourses.length
     : 0;
 
   const sessions = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  const calculateSessionAccumulation = (session: number) => {
+    if (isBPro) {
+      if (!isTMKAvailable(session)) return 0;
+      const tmk = getScoreFromList(evaluations, session, 'TMK');
+      return tmk / 3;
+    } else {
+      const keh = getScoreFromList(evaluations, session, 'Kehadiran');
+      const tut = getScoreFromList(evaluations, session, 'Tuton');
+      const tmk = getScoreFromList(evaluations, session, 'TMK');
+
+      const isKeh = isKehadiranAvailable(session);
+      const isTut = isTutonAvailable(session);
+      const isTmk = isTMKAvailable(session);
+
+      const numKeh = (activeSem >= 1 && activeSem <= 3) ? 8 : 5;
+      const numTut = (activeSem >= 1 && activeSem <= 3) ? 8 : 5;
+      const numTmk = 3;
+
+      let contrib = 0;
+      if (isKeh) contrib += (keh * 0.2) / numKeh;
+      if (isTut) contrib += (tut * 0.3) / numTut;
+      if (isTmk) contrib += (tmk * 0.5) / numTmk;
+
+      return contrib;
+    }
+  };
+
+  const grandTotal = calculateGrandTotal(evaluations, activeSem, courseCategory);
 
   const handleSubmit = async () => {
     if (!userId || !selectedCourse) return;
@@ -182,15 +199,9 @@ const SessionEvaluation = () => {
   };
 
   const getScore = (session: number, type: string) => {
-    const evalItem = evaluations.find(e => e.session === session && (e.type === type || (type === 'Tuton' && e.type === 'Tugas / Tuton')));
+    const evalItem = evaluations.find(e => e.session === session && e.type === type);
     return evalItem ? { id: evalItem.id, score: evalItem.score } : { id: null, score: null };
   };
-
-  const calculateSessionAccumulation = (session: number) => {
-    return calculateSessionAccumulationForEvaluations(session, evaluations, activeSem, isBPro);
-  };
-
-  const grandTotal = sessions.reduce((sum, s) => sum + calculateSessionAccumulation(s), 0);
 
   return (
     <div className="space-y-12 pb-20 pt-6">
@@ -243,21 +254,31 @@ const SessionEvaluation = () => {
         <div className="grid grid-cols-1 gap-10">
            {/* Analysis Header */}
            <div className="studelle-card p-10 bg-studelle-burgundy text-white relative overflow-hidden group border-none">
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                 <div className="space-y-3">
-                    <p className="text-xs font-bold tracking-[0.3em] text-white/30 uppercase">{courseCategory.replace(' (Umum)', '').replace(' (Pilihan)', '')}</p>
-                    <h3 className="text-4xl font-serif font-bold tracking-tight leading-none italic">{selectedCourse.name}</h3>
+              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 text-white">
+                 <div className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-bold tracking-wider text-white/40 uppercase">
+                          <span className="font-mono">{selectedCourse.code}</span>
+                          <span className="opacity-20">|</span>
+                          <span className="font-serif italic">{selectedCourse.sks} SKS</span>
+                          <span className="opacity-20">|</span>
+                          <span className="font-serif italic">{selectedCourse.type}</span>
+                          <span className="opacity-20">|</span>
+                          <span className="font-serif italic">{selectedCourse.category}</span>
+                        </div>
+                        <h3 className="text-4xl font-serif font-bold tracking-tight leading-none italic">{selectedCourse.name}</h3>
+                    </div>
                  </div>
                  
                  <div className="flex items-center gap-10">
                     <div className="text-right">
-                       <p className="text-xs font-bold tracking-[0.2em] text-white/30 mb-2 uppercase">Rata-rata Matkul</p>
+                       <p className="text-xs font-bold tracking-[0.2em] text-white/30 mb-2 uppercase">Nilai Akhir Est.</p>
                        <p className="text-6xl font-serif font-bold text-studelle-gold tracking-tighter">{selectedCourseAvg.toFixed(1)}</p>
                     </div>
                     <div className="h-16 w-px bg-white/10 hidden md:block" />
                     <div className="text-right">
-                       <p className="text-xs font-bold tracking-[0.2em] text-white/30 mb-2 uppercase">Semester Perf.</p>
-                       <p className="text-4xl font-serif font-bold text-white">{semesterAverage.toFixed(1)}</p>
+                       <p className="text-xs font-bold tracking-[0.2em] text-white/30 mb-2 uppercase">Sem. Avg</p>
+                       <p className="text-4xl font-serif font-bold text-white tracking-tighter">{semesterAverage.toFixed(1)}</p>
                     </div>
                  </div>
               </div>
@@ -280,7 +301,7 @@ const SessionEvaluation = () => {
                      onChange={(e) => setFormData({...formData, session: parseInt(e.target.value)})}
                      className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
                    >
-                     {sessions.map(i => <option key={i} value={i}>Sesi {i}</option>)}
+                     {sessions.map(i => <option key={i} value={i}>{isBPro ? 'Pertemuan' : 'Sesi'} {i}</option>)}
                    </select>
                 </FieldGroup>
                 
@@ -290,8 +311,8 @@ const SessionEvaluation = () => {
                      onChange={(e) => setFormData({...formData, type: e.target.value})}
                      className="studelle-input appearance-none bg-studelle-cream border-studelle-burgundy/5"
                    >
-                     <option value="Kehadiran">Kehadiran</option>
-                     <option value="Tuton">Tuton</option>
+                     {!isBPro && <option value="Kehadiran">Kehadiran</option>}
+                     {!isBPro && <option value="Tuton">Tuton</option>}
                      <option value="TMK">TMK</option>
                    </select>
                 </FieldGroup>
@@ -305,7 +326,7 @@ const SessionEvaluation = () => {
                        const parsed = parseInt(val, 10);
                        setFormData({...formData, score: isNaN(parsed) ? 0 : Math.min(100, Math.max(0, parsed))});
                      }}
-                     className="studelle-input bg-studelle-cream border-studelle-burgundy/5"
+                     className="studelle-input bg-studelle-cream border-studelle-burgundy/5 font-mono"
                    />
                 </FieldGroup>
 
@@ -332,11 +353,13 @@ const SessionEvaluation = () => {
                     <thead>
                        <tr className="bg-studelle-burgundy/[0.02] text-studelle-burgundy/50 text-xs font-bold tracking-widest uppercase">
                           <th className="px-10 py-6">{isBPro ? 'PERTEMUAN' : 'SESI'}</th>
-                          {!isBPro && <th className="px-10 py-6 text-center">KEHADIRAN (20%)</th>}
-                          {!isBPro && <th className="px-10 py-6 text-center">TUTON (30%)</th>}
-                          <th className="px-10 py-6 text-center">TMK {isBPro ? '(100%)' : '(50%)'}</th>
-                          <th className="px-10 py-6 text-center bg-studelle-gold/5">AKUMULASI SESI</th>
-                          <th className="px-10 py-6 text-right">AKSI</th>
+                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">KEHADIRAN (20%)</th>}
+                          {!isBPro && <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">TUTON (30%)</th>}
+                          <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5">
+                            TMK {isBPro ? '(100%)' : '(50%)'}
+                          </th>
+                          <th className="px-10 py-6 text-center border-l border-studelle-burgundy/5 bg-studelle-gold/5">AKUMULASI</th>
+                          <th className="px-10 py-6 text-right border-l border-studelle-burgundy/5">AKSI</th>
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-studelle-burgundy/5">
@@ -397,23 +420,25 @@ const SessionEvaluation = () => {
                                  onCancel={() => setEditingCell(null)}
                                />
 
-                               <td className="px-10 py-8 text-center bg-studelle-gold/5">
+                               <td className="px-10 py-8 text-center bg-studelle-gold/5 border-l border-studelle-burgundy/5">
                                   <span className={cn(
-                                    "text-lg font-serif font-bold",
+                                    "text-lg font-mono font-bold",
                                     sessAccum > 0 ? "text-studelle-accent" : "text-studelle-burgundy/20"
                                   )}>
-                                    {sessAccum.toFixed(1)}
+                                    {sessAccum > 0 ? sessAccum.toFixed(1) : '-'}
                                   </span>
                                </td>
 
-                               <td className="px-10 py-8 text-right">
-                                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <td className="px-10 py-8 text-right border-l border-studelle-burgundy/5">
+                                  <div className="flex justify-end gap-2 transition-opacity">
                                      <button 
                                        onClick={() => {
                                          const ids = [keh.id, tut.id, tmk.id].filter(id => id);
                                          if (ids.length === 0) return;
                                          if (window.confirm(`Hapus semua data untuk sesi ${num}?`)) {
-                                           ids.forEach(id => deleteEvaluation(userId!, selectedCourse.id, id!));
+                                           ids.forEach(async (id) => {
+                                             if (id) await deleteEvaluation(userId!, selectedCourse.id, id);
+                                           });
                                          }
                                        }}
                                        className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm"
@@ -427,11 +452,11 @@ const SessionEvaluation = () => {
                        })}
                        
                        <tr className="bg-studelle-burgundy text-white font-serif">
-                          <td className="px-10 py-8 text-lg font-bold" colSpan={isBPro ? 2 : 4}>GRAND TOTAL NILAI</td>
-                          <td className="px-10 py-8 text-center text-4xl font-bold text-studelle-gold">
+                          <td className="px-10 py-8 text-lg font-bold" colSpan={isBPro ? 2 : 4}>GRAND TOTAL NILAI AKHIR</td>
+                          <td className="px-10 py-8 text-center text-4xl font-bold text-studelle-gold bg-black/10 border-l border-white/10 tracking-tighter">
                             {grandTotal.toFixed(1)}
                           </td>
-                          <td className="px-10 py-8 text-right">
+                          <td className="px-10 py-8 text-right border-l border-white/10">
                              <Star size={24} className="opacity-30 ml-auto" />
                           </td>
                        </tr>
@@ -464,13 +489,13 @@ const SessionEvaluation = () => {
 
 const ScoreCell = ({ available, scoreObj, onEdit, isEditing, editValue, onEditValueChange, onSave, onCancel }: any) => {
   if (!available) {
-    return <td className="px-10 py-8 text-center"><span className="text-[10px] font-black tracking-widest text-studelle-burgundy/10">N/A</span></td>;
+    return <td className="px-10 py-8 text-center border-l border-studelle-burgundy/5"><span className="text-[10px] font-black tracking-widest text-studelle-burgundy/10">N/A</span></td>;
   }
   if (isEditing) {
     return (
-      <td className="px-10 py-8 text-center">
+      <td className="px-10 py-8 text-center border-l border-studelle-burgundy/5">
          <div className="flex items-center justify-center gap-2">
-            <input type="number" value={editValue} onChange={(e) => onEditValueChange(parseInt(e.target.value) || 0)} className="w-16 h-8 studelle-input text-center p-0 text-xs" autoFocus />
+            <input type="number" value={editValue} onChange={(e) => onEditValueChange(parseInt(e.target.value) || 0)} className="w-16 h-8 studelle-input text-center p-0 text-xs font-mono" autoFocus />
             <button onClick={onSave} className="text-green-500 hover:scale-110"><Check size={16} /></button>
             <button onClick={onCancel} className="text-red-500 hover:scale-110"><X size={16} /></button>
          </div>
@@ -478,9 +503,9 @@ const ScoreCell = ({ available, scoreObj, onEdit, isEditing, editValue, onEditVa
     );
   }
   return (
-    <td className="px-10 py-8 text-center cursor-pointer group/cell" onClick={onEdit}>
+    <td className="px-10 py-8 text-center cursor-pointer group/cell border-l border-studelle-burgundy/5" onClick={onEdit}>
        <div className="flex items-center justify-center gap-2">
-          <span className={cn("text-base font-bold", scoreObj.score !== null ? "text-studelle-burgundy" : "text-studelle-burgundy/10")}>{scoreObj.score !== null ? scoreObj.score : '0'}</span>
+          <span className={cn("text-base font-mono font-bold", scoreObj.score !== null ? "text-studelle-burgundy" : "text-studelle-burgundy/10")}>{scoreObj.score !== null ? scoreObj.score : '0'}</span>
           <Edit3 size={10} className="text-studelle-accent opacity-0 group-hover/cell:opacity-100 transition-opacity" />
        </div>
     </td>

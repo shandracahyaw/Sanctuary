@@ -23,7 +23,7 @@
       "description": "Details of a course in the curriculum.",
       "type": "object",
       "properties": {
-        "category": { "type": "string", "enum": ["Non BPro (Umum)", "BPro (Pilihan)"] },
+        "category": { "type": "string", "enum": ["Non BPro", "BPro", "TAP (Tugas Akhir Program)"] },
         "code": { "type": "string" },
         "name": { "type": "string" },
         "sks": { "type": "number" },

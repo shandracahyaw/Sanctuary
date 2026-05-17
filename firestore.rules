@@ -11,8 +11,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAuthorizedEmail() {
+      return isSignedIn() && request.auth.token.email == 'shandracahya27@gmail.com' && request.auth.token.email_verified == true;
+    }
+
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      // Allow if it's the specific authorized Google user
+      // OR if it's the specific unauthorized but "allowed" manual session (for local persistence)
+      return isAuthorizedEmail() || (request.auth == null && (userId == 'SHANDRA' || userId == 'escewescw')); 
     }
 
     function isValidId(id) {
@@ -77,23 +83,23 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow get: if true;
-      allow create: if isValidUser(incoming()) && 
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) && 
                       incoming().updatedAt == request.time;
-      allow update: if (isOwner(userId) || (userId is string && userId.size() > 0)) && 
+      allow update: if isOwner(userId) && 
                       isValidUser(incoming()) && 
                       (!('createdAt' in incoming()) || incoming().createdAt == existing().createdAt) &&
                       incoming().updatedAt == request.time;
     }
 
-    // Course subcollection patterns (simplified for manual access)
+    // Course subcollection patterns (restricted)
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if isOwner(userId) || (userId is string && userId.size() > 0);
+      allow read, write: if isOwner(userId);
     }
     
-    // Explicit subcollections (optional if above catch-all is top level)
+    // Explicit subcollections
     match /users/{userId}/courses/{courseId} {
-      allow list, get, create, update, delete: if isOwner(userId) || (userId is string && userId.size() > 0);
+      allow list, get, create, update, delete: if isOwner(userId);
     }
 
     // Evaluations subcollection

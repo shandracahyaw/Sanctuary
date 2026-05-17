@@ -193,7 +193,7 @@ const Transcript = () => {
                         <tr key={grade.id} className="hover:bg-studelle-burgundy/[0.01] transition-colors group">
                            <td className="px-12 py-10">
                               <p className="text-lg font-serif font-bold text-studelle-burgundy tracking-tight italic">{grade.courseName}</p>
-                              <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester}</p>
+                              <p className="text-[10px] font-bold text-studelle-burgundy/30 uppercase tracking-widest">Semester {grade.semester || '-'}</p>
                            </td>
                            <td className="px-12 py-10">
                               <p className="text-sm font-mono font-bold text-studelle-burgundy/60 tracking-wider uppercase">{grade.courseCode || '-'}</p>

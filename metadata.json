@@ -1,6 +1,6 @@
 {
   "name": "Studelle",
-  "description": "A comprehensive student academic management platform with a sophisticated, professional interface.",
+  "description": "Private personal edition of the comprehensive student academic management platform, restricted for individual use.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

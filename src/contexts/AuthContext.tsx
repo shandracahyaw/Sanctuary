@@ -43,6 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const ALLOWED_EMAIL = 'shandracahya27@gmail.com';
+  const ALLOWED_USERNAMES = ['escewescw', 'shandra'];
+
   const fetchProfile = async (uid: string) => {
     try {
       const data = await getUserProfile(uid);
@@ -58,6 +61,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        if (currentUser.email !== ALLOWED_EMAIL) {
+          console.error('Access denied for email:', currentUser.email);
+          await signOut(auth);
+          setError(`Akses ditolak. Aplikasi ini bersifat privat.`);
+          setLoading(false);
+          return;
+        }
+
         setUser(currentUser);
         setUsername(null);
         localStorage.removeItem('studelle_session_user');
@@ -82,8 +93,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check for manual username session
         const storedUsername = localStorage.getItem('studelle_session_user');
         if (storedUsername) {
-          setUsername(storedUsername);
-          await fetchProfile(storedUsername);
+          if (!ALLOWED_USERNAMES.includes(storedUsername.toLowerCase())) {
+            localStorage.removeItem('studelle_session_user');
+            setUsername(null);
+            setProfile(null);
+          } else {
+            setUsername(storedUsername);
+            await fetchProfile(storedUsername);
+          }
         } else {
           setProfile(null);
         }
@@ -95,11 +112,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     setError(null);
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      // Add custom parameters to force identity selection if needed
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      
+      if (result.user.email !== ALLOWED_EMAIL) {
+        throw new Error('Email tidak diizinkan mengakses aplikasi ini.');
+      }
     } catch (err: any) {
+      console.error('Google Sign-In Error:', err);
       handleAuthError(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -108,6 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const cleanId = identifier.toLowerCase().trim().replace('@', '');
+      
+      if (!ALLOWED_USERNAMES.includes(cleanId)) {
+        throw new Error('Akses ditolak. Username tidak diizinkan.');
+      }
+
       const userData = await getUserProfile(cleanId);
       
       if (!userData) {
@@ -135,6 +167,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const cleanId = identifier.toLowerCase().trim().replace('@', '');
+
+      if (!ALLOWED_USERNAMES.includes(cleanId)) {
+        throw new Error('Registrasi ditolak. Aplikasi ini bersifat privat.');
+      }
+
       const existing = await getUserProfile(cleanId);
       if (existing) {
         throw new Error('Username sudah digunakan.');

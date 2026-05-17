@@ -113,7 +113,7 @@ export const addCourse = async (userId: string, courseData: any) => {
 
 export const subscribeCourses = (userId: string, callback: (data: any[]) => void) => {
   const colPath = `users/${userId}/courses`;
-  const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+  const q = query(collection(db, colPath));
   return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   }, (error) => {
@@ -124,7 +124,7 @@ export const subscribeCourses = (userId: string, callback: (data: any[]) => void
 export const getCourses = async (userId: string) => {
   const colPath = `users/${userId}/courses`;
   try {
-    const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+    const q = query(collection(db, colPath));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
@@ -198,7 +198,7 @@ export const addGrade = async (userId: string, gradeData: any) => {
 
 export const subscribeGrades = (userId: string, callback: (data: any[]) => void) => {
   const colPath = `users/${userId}/grades`;
-  const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+  const q = query(collection(db, colPath));
   return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   }, (error) => {
@@ -209,7 +209,7 @@ export const subscribeGrades = (userId: string, callback: (data: any[]) => void)
 export const getGrades = async (userId: string) => {
   const colPath = `users/${userId}/grades`;
   try {
-    const q = query(collection(db, colPath), orderBy('semester', 'asc'));
+    const q = query(collection(db, colPath));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {

@@ -165,13 +165,30 @@ const GradeCard = () => {
   const totalSKSActive = activeGrades.reduce((sum, g) => sum + g.sks, 0);
   const totalMutuActive = activeGrades.reduce((sum, g) => sum + g.totalPoint, 0);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
+    const PRIMARY_COLOR = [0, 35, 71]; // #002347 Dark Navy
     const TEXT_DARK = [20, 20, 20];
 
-    // Page Frame
-    // (Frame removed)
+    // Helper to get image as data URL
+    const getImageData = (url: string): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(''); // Fallback to empty if error
+        img.src = url;
+      });
+    };
+
+    const photoData = await getImageData(profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'U')}&background=064e3b&color=fff`);
 
     // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
@@ -200,35 +217,78 @@ const GradeCard = () => {
       { label: "SEMESTER AKTIF", value: String(activeSem) },
     ];
 
-    const contentStartY = titleY + 11; 
-    const rowHeight = 7; 
-    const contentEndY = contentStartY + ((labels.length - 1) * rowHeight);
+    const boxStartY = titleY + 5;
+    const boxHeight = 55;
+    const rowHeight = 7.5;
+    const verticalPadding = (boxHeight - ((labels.length - 1) * rowHeight)) / 2;
+    const contentStartY = boxStartY + verticalPadding;
 
-    // Draw Box
+    // Dimensions
+    const photoBoxWidth = 45;
+    const photoBoxX = 7;
+    const gap = 5;
+    const identityBoxX = photoBoxX + photoBoxWidth + gap;
+    const identityBoxWidth = 196 - photoBoxWidth - gap;
+
+    // Draw Boxes
     doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setLineWidth(0.5);
-    doc.rect(7, titleY - 8, 196, (contentEndY - titleY) + 14, 'S');
+    
+    // Photo Box (Left)
+    doc.rect(photoBoxX, boxStartY, photoBoxWidth, boxHeight, 'S');
+
+    // Identity Box (Right of photo)
+    doc.rect(identityBoxX, boxStartY, identityBoxWidth, boxHeight, 'S');
+
+    // Add Photo to Photo Box with Original Aspect Ratio
+    if (photoData) {
+      try {
+        const props = doc.getImageProperties(photoData);
+        const ratio = props.width / props.height;
+        let targetW = photoBoxWidth - 8;
+        let targetH = targetW / ratio;
+        
+        if (targetH > boxHeight - 8) {
+          targetH = boxHeight - 8;
+          targetW = targetH * ratio;
+        }
+        
+        const renderX = photoBoxX + (photoBoxWidth - targetW) / 2;
+        const renderY = boxStartY + (boxHeight - targetH) / 2;
+        doc.addImage(photoData, 'PNG', renderX, renderY, targetW, targetH, undefined, 'FAST');
+      } catch (e) {
+        // Fallback if getImageProperties fails
+        doc.addImage(photoData, 'PNG', photoBoxX + 4, boxStartY + 4, photoBoxWidth - 8, boxHeight - 8, undefined, 'FAST');
+      }
+    }
 
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
     doc.setFontSize(12);
-    doc.text(idTitle, 11, titleY);
+    doc.text(idTitle, identityBoxX + 4, titleY);
     const idTitleWidth = doc.getTextWidth(idTitle);
-    doc.line(11, titleY + 2, 11 + idTitleWidth, titleY + 2);
+    doc.line(identityBoxX + 4, titleY + 2, identityBoxX + 4 + idTitleWidth, titleY + 2);
 
     doc.setFontSize(10);
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
 
+    const labelColumnWidth = 45;
+    const colonWidth = 3;
     labels.forEach((item, i) => {
       doc.setFont("times", "bold");
-      doc.text(item.label, 11, contentStartY + (i * rowHeight));
-      doc.text(":", 46, contentStartY + (i * rowHeight));
+      doc.text(item.label, identityBoxX + 4, contentStartY + (i * rowHeight));
+      doc.text(":", identityBoxX + 4 + labelColumnWidth, contentStartY + (i * rowHeight));
       doc.setFont("times", "normal");
-      doc.text(item.value, 49, contentStartY + (i * rowHeight));
+      
+      const maxWidth = identityBoxWidth - labelColumnWidth - colonWidth - 8;
+      doc.text(item.value, identityBoxX + 4 + labelColumnWidth + colonWidth, contentStartY + (i * rowHeight), { maxWidth });
     });
 
+    // Content End Y for next section
+    const contentEndY = boxStartY + boxHeight;
+
     // Table Header Info
-    const tableTitleY = contentEndY + 18; 
+    const tableTitleY = contentEndY + 10; 
     
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
@@ -299,16 +359,16 @@ const GradeCard = () => {
       margin: { left: 9, right: 9 }
     });
 
-    const finalYTemp = ((doc as any).lastAutoTable?.finalY || 105) + 12;
+    const finalYTemp = ((doc as any).lastAutoTable?.finalY || 105) + 8;
     const tableStartPage = 1;
-    if (finalYTemp > 230) doc.addPage();
-    const finalY = (finalYTemp > 230) ? 20 : finalYTemp;
+    if (finalYTemp > 240) doc.addPage();
+    const finalY = (finalYTemp > 240) ? 20 : finalYTemp;
     const currentPage = (doc as any).internal.getNumberOfPages();
 
     // Summary Box
     const boxX = 11;
     const boxW = 188;
-    const boxH = 32;
+    const boxH = 30; // Slightly shorter
     const dividerX = 110;
 
     // Background for Right Section
@@ -323,34 +383,37 @@ const GradeCard = () => {
     // Divider Line
     doc.setLineWidth(0.2);
     doc.setDrawColor(200, 200, 200);
-    doc.line(dividerX, finalY + 5, dividerX, finalY + 30); 
+    doc.line(dividerX, finalY + 5, dividerX, finalY + 25); 
 
     doc.setFontSize(9);
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
     doc.setFont("times", "bold");
     
-    // Left stats
+    // Left stats (Vertical Centering: 3 lines, spacing 6.0 for perfect balance)
     const labelX = 18;
     const colonX = 64;
+    const summaryRowHeight = 6.0;
+    const startOffset = 11.5; // Optimized starting offset
     
-    doc.text("TOTAL SKS SEMESTER", labelX, finalY + 10);
-    doc.text(`: ${totalSKSActive}`, colonX, finalY + 10);
+    doc.text("TOTAL SKS SEMESTER", labelX, finalY + startOffset);
+    doc.text(`: ${totalSKSActive}`, colonX, finalY + startOffset);
     
-    doc.text("TOTAL MUTU SEMESTER", labelX, finalY + 18);
-    doc.text(`: ${totalMutuActive.toFixed(2)}`, colonX, finalY + 18);
+    doc.text("TOTAL MUTU SEMESTER", labelX, finalY + startOffset + summaryRowHeight);
+    doc.text(`: ${totalMutuActive.toFixed(2)}`, colonX, finalY + startOffset + summaryRowHeight);
     
-    doc.text("TOTAL SKS KUMULATIF", labelX, finalY + 26);
-    doc.text(`: ${totalSKS}`, colonX, finalY + 26);
+    doc.text("TOTAL SKS KUMULATIF", labelX, finalY + startOffset + (2 * summaryRowHeight));
+    doc.text(`: ${totalSKS}`, colonX, finalY + startOffset + (2 * summaryRowHeight));
 
-    // Right stats (IP)
-    doc.setFontSize(10);
-    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
-    
-    doc.text(`IPS Semester ${activeSem}`, dividerX + 8, finalY + 14);
-    doc.text(`: ${ips.toFixed(2)}`, dividerX + 45, finalY + 14);
+    // Right stats (IP) (Vertical Centering: 2 lines, increased font size)
+    doc.setFontSize(12);
+    const rightRowHeight = 10.0;
+    const rightStartOffset = 12.5;
 
-    doc.text("IP Kumulatif", dividerX + 8, finalY + 26);
-    doc.text(`: ${ipk.toFixed(2)}`, dividerX + 45, finalY + 26);
+    doc.text(`IPS Semester ${activeSem}`, dividerX + 8, finalY + rightStartOffset);
+    doc.text(`: ${ips.toFixed(2)}`, dividerX + 48, finalY + rightStartOffset);
+
+    doc.text("IP Kumulatif", dividerX + 8, finalY + rightStartOffset + rightRowHeight);
+    doc.text(`: ${ipk.toFixed(2)}`, dividerX + 48, finalY + rightStartOffset + rightRowHeight);
 
     // Dynamic Box for Table & Summary
     const boxBottomY = finalY + boxH + 5;

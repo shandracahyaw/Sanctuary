@@ -118,13 +118,30 @@ const Transcript = () => {
     return "KURANG";
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
+    const PRIMARY_COLOR = [0, 35, 71]; // #002347 Dark Navy
     const TEXT_DARK = [20, 20, 20];
 
-    // Page Frame
-    // (Frame removed)
+    // Helper to get image as data URL
+    const getImageData = (url: string): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(''); // Fallback to empty if error
+        img.src = url;
+      });
+    };
+
+    const photoData = await getImageData(profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'U')}&background=064e3b&color=fff`);
 
     // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
@@ -152,35 +169,77 @@ const Transcript = () => {
       { label: "PROGRAM STUDI", value: (profile?.programStudy || 'Prodi Belum Set') },
     ];
 
-    const contentStartY = titleY + 11; 
-    const rowHeight = 7; 
-    const contentEndY = contentStartY + ((identityLabels.length - 1) * rowHeight);
+    const boxStartY = titleY + 5;
+    const boxHeight = 48; // Slightly shorter as it has only 4 labels
+    const rowHeight = 7.5;
+    const verticalPadding = (boxHeight - ((identityLabels.length - 1) * rowHeight)) / 2;
+    const contentStartY = boxStartY + verticalPadding;
+    
+    // Dimensions
+    const photoBoxWidth = 45;
+    const photoBoxX = 7;
+    const gap = 5;
+    const identityBoxX = photoBoxX + photoBoxWidth + gap;
+    const identityBoxWidth = 196 - photoBoxWidth - gap;
 
-    // Draw Box
+    // Draw Boxes
     doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setLineWidth(0.5);
-    doc.rect(7, titleY - 8, 196, (contentEndY - titleY) + 14, 'S');
+    
+    // Photo Box (Left)
+    doc.rect(photoBoxX, boxStartY, photoBoxWidth, boxHeight, 'S');
+
+    // Identity Box (Right of photo)
+    doc.rect(identityBoxX, boxStartY, identityBoxWidth, boxHeight, 'S');
+
+    // Add Photo to Photo Box with Original Aspect Ratio
+    if (photoData) {
+      try {
+        const props = doc.getImageProperties(photoData);
+        const ratio = props.width / props.height;
+        let targetW = photoBoxWidth - 8;
+        let targetH = targetW / ratio;
+        
+        if (targetH > boxHeight - 8) {
+          targetH = boxHeight - 8;
+          targetW = targetH * ratio;
+        }
+        
+        const renderX = photoBoxX + (photoBoxWidth - targetW) / 2;
+        const renderY = boxStartY + (boxHeight - targetH) / 2;
+        doc.addImage(photoData, 'PNG', renderX, renderY, targetW, targetH, undefined, 'FAST');
+      } catch (e) {
+        doc.addImage(photoData, 'PNG', photoBoxX + 4, boxStartY + 4, photoBoxWidth - 8, boxHeight - 8, undefined, 'FAST');
+      }
+    }
 
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
     doc.setFontSize(12);
-    doc.text(idTitle, 11, titleY);
+    doc.text(idTitle, identityBoxX + 4, titleY);
     const idTitleWidth = doc.getTextWidth(idTitle);
-    doc.line(11, titleY + 2, 11 + idTitleWidth, titleY + 2);
+    doc.line(identityBoxX + 4, titleY + 2, identityBoxX + 4 + idTitleWidth, titleY + 2);
 
     doc.setFontSize(10);
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
 
+    const labelColumnWidth = 45;
+    const colonWidth = 3;
     identityLabels.forEach((item, i) => {
       doc.setFont("times", "bold");
-      doc.text(item.label, 11, contentStartY + (i * rowHeight));
-      doc.text(":", 46, contentStartY + (i * rowHeight));
+      doc.text(item.label, identityBoxX + 4, contentStartY + (i * rowHeight));
+      doc.text(":", identityBoxX + 4 + labelColumnWidth, contentStartY + (i * rowHeight));
       doc.setFont("times", "normal");
-      doc.text(item.value, 49, contentStartY + (i * rowHeight));
+      
+      const maxWidth = identityBoxWidth - labelColumnWidth - colonWidth - 8;
+      doc.text(item.value, identityBoxX + 4 + labelColumnWidth + colonWidth, contentStartY + (i * rowHeight), { maxWidth });
     });
 
+    // Content End Y for next section
+    const contentEndY = boxStartY + boxHeight;
+
     // Table Header Info
-    const tableTitleY = contentEndY + 18; 
+    const tableTitleY = contentEndY + 10; 
     
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setFont("times", "bold");
@@ -247,14 +306,14 @@ const Transcript = () => {
     const tableStartPage = 1;
 
     // Check if summary fits on page
-    if (finalY > 230) doc.addPage();
-    const summaryY = finalY > 230 ? 20 : finalY + 10;
+    if (finalY > 240) doc.addPage();
+    const summaryY = finalY > 240 ? 20 : finalY + 8;
     const currentPage = (doc as any).internal.getNumberOfPages();
 
     // Summary Box
     const boxX = 11;
     const boxW = 188;
-    const boxH = 32;
+    const boxH = 30; // Slightly shorter
     const dividerX = 110;
 
     // Background for Right Section
@@ -269,37 +328,45 @@ const Transcript = () => {
     // Divider Line
     doc.setLineWidth(0.2);
     doc.setDrawColor(200, 200, 200);
-    doc.line(dividerX, summaryY + 5, dividerX, summaryY + 30); 
+    doc.line(dividerX, summaryY + 5, dividerX, summaryY + 25); 
 
     doc.setFontSize(9);
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
     doc.setFont("times", "bold");
     
-    // Left summary
+    // Left summary (Vertical Centering: 3 lines, optimized spacing)
     const labelX = 18;
     const colonX = 64;
+    const summaryRowHeight = 6.0;
+    const summaryStartOffset = 11.5;
     
-    doc.text("TOTAL SKS KUMULATIF", labelX, summaryY + 10);
-    doc.text(`: ${tSks}`, colonX, summaryY + 10);
-    doc.text("TOTAL MUTU KUMULATIF", labelX, summaryY + 18);
-    doc.text(`: ${tPoints.toFixed(2)}`, colonX, summaryY + 18);
-    doc.text("PREDIKAT KELULUSAN", labelX, summaryY + 26);
+    doc.text("TOTAL SKS KUMULATIF", labelX, summaryY + summaryStartOffset);
+    doc.text(`: ${tSks}`, colonX, summaryY + summaryStartOffset);
+
+    doc.text("TOTAL MUTU KUMULATIF", labelX, summaryY + summaryStartOffset + summaryRowHeight);
+    doc.text(`: ${tPoints.toFixed(2)}`, colonX, summaryY + summaryStartOffset + summaryRowHeight);
+
+    doc.text("PREDIKAT KELULUSAN", labelX, summaryY + summaryStartOffset + (2 * summaryRowHeight));
     
     // Predicate adjustment for long text
     const predikat = getPredikat(tIpk);
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    if (predikat.length > 20) doc.setFontSize(8);
-    doc.text(`: ${predikat}`, colonX, summaryY + 26);
+    if (predikat.length > 20) {
+      doc.setFontSize(8);
+      doc.text(`: ${predikat}`, colonX, summaryY + summaryStartOffset + (2 * summaryRowHeight));
+    } else {
+      doc.text(`: ${predikat}`, colonX, summaryY + summaryStartOffset + (2 * summaryRowHeight));
+    }
     doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
     doc.setFontSize(9);
 
-    // Right summary (IPK)
+    // Right summary (IPK) - Perfectly centered title and value
     const centerXRight = dividerX + (boxW - (dividerX - boxX)) / 2;
-    doc.setFontSize(10);
-    doc.text("IP Kumulatif (IPK)", centerXRight, summaryY + 14, { align: "center" });
-    doc.setFontSize(24);
+    doc.setFontSize(11);
+    doc.text("IP Kumulatif (IPK)", centerXRight, summaryY + 9.5, { align: "center" });
+    doc.setFontSize(26); // Slightly larger for emphasis
     doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.text(tIpk.toFixed(2), centerXRight, summaryY + 28, { align: "center" });
+    doc.text(tIpk.toFixed(2), centerXRight, summaryY + 22.5, { align: "center" });
 
     // Dynamic Box for Table & Summary
     const boxBottomY = summaryY + boxH + 5;

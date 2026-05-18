@@ -111,7 +111,7 @@ export const Sidebar = ({ className }: { className?: string }) => {
               className="overflow-hidden"
             >
               <p className="text-xs font-bold text-white truncate">{displayName}</p>
-              <p className="text-[9px] text-white/30 tracking-wider">Mahasiswa Resmi</p>
+              <p className="text-[9px] text-white/30 tracking-wider">Mahasiswa</p>
             </motion.div>
           )}
         </div>

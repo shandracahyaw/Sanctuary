@@ -32,9 +32,29 @@ const Downloads = () => {
     try {
       const doc = new jsPDF();
       const sem = selectedSemesters[type];
-      const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
+      const PRIMARY_COLOR = [0, 35, 71]; // #002347 Dark Navy
       const TEXT_DARK = [20, 20, 20];
       const LIGHT_GRAY = [245, 245, 245];
+
+      // Helper to get image as data URL
+      const getImageData = (url: string): Promise<string> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = () => resolve(''); // Fallback to empty if error
+          img.src = url;
+        });
+      };
+
+      const photoData = await getImageData(profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'U')}&background=064e3b&color=fff`);
       
       // Helper: Draw Header
       const drawHeader = (subtitle: string) => {
@@ -68,34 +88,73 @@ const Downloads = () => {
           labels.push({ label: "SEMESTER AKTIF", value: String(activeSemester) });
         }
 
-        const contentStartY = titleY + 11; 
-        const rowHeight = 7; 
-        const contentEndY = contentStartY + ((labels.length - 1) * rowHeight);
+        const boxStartY = titleY + 5;
+        const boxHeight = 55;
+        const rowHeight = 7.5;
+        const verticalPadding = (boxHeight - ((labels.length - 1) * rowHeight)) / 2;
+        const contentStartY = boxStartY + verticalPadding;
 
-        // Draw Box
+        // Dimensions
+        const photoBoxWidth = 45;
+        const photoBoxX = 7;
+        const gap = 5;
+        const identityBoxX = photoBoxX + photoBoxWidth + gap;
+        const identityBoxWidth = 196 - photoBoxWidth - gap;
+
+        // Draw Boxes
         doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
         doc.setLineWidth(0.5);
-        doc.rect(7, titleY - 8, 196, (contentEndY - titleY) + 14, 'S');
+        
+        // Photo Box (Left)
+        doc.rect(photoBoxX, boxStartY, photoBoxWidth, boxHeight, 'S');
+
+        // Identity Box (Right of photo)
+        doc.rect(identityBoxX, boxStartY, identityBoxWidth, boxHeight, 'S');
+
+        // Add Photo to Photo Box with Original Aspect Ratio
+        if (photoData) {
+          try {
+            const props = doc.getImageProperties(photoData);
+            const ratio = props.width / props.height;
+            let targetW = photoBoxWidth - 8;
+            let targetH = targetW / ratio;
+            
+            if (targetH > boxHeight - 8) {
+              targetH = boxHeight - 8;
+              targetW = targetH * ratio;
+            }
+            
+            const renderX = photoBoxX + (photoBoxWidth - targetW) / 2;
+            const renderY = boxStartY + (boxHeight - targetH) / 2;
+            doc.addImage(photoData, 'PNG', renderX, renderY, targetW, targetH, undefined, 'FAST');
+          } catch (e) {
+            doc.addImage(photoData, 'PNG', photoBoxX + 4, boxStartY + 4, photoBoxWidth - 8, boxHeight - 8, undefined, 'FAST');
+          }
+        }
 
         doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
         doc.setFont("times", "bold");
         doc.setFontSize(12);
-        doc.text(titleText, 11, titleY);
+        doc.text(titleText, identityBoxX + 4, titleY);
         const titleWidth = doc.getTextWidth(titleText);
-        doc.line(11, titleY + 2, 11 + titleWidth, titleY + 2);
+        doc.line(identityBoxX + 4, titleY + 2, identityBoxX + 4 + titleWidth, titleY + 2);
 
         doc.setFontSize(10);
         doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
 
+        const labelColumnWidth = 45;
+        const colonWidth = 3;
         labels.forEach((item, index) => {
           doc.setFont("times", "bold");
-          doc.text(item.label, 11, contentStartY + (index * rowHeight));
-          doc.text(":", 46, contentStartY + (index * rowHeight));
+          doc.text(item.label, identityBoxX + 4, contentStartY + (index * rowHeight));
+          doc.text(":", identityBoxX + 4 + labelColumnWidth, contentStartY + (index * rowHeight));
           doc.setFont("times", "normal");
-          doc.text(item.value, 49, contentStartY + (index * rowHeight));
+          
+          const maxWidth = identityBoxWidth - labelColumnWidth - colonWidth - 8;
+          doc.text(item.value, identityBoxX + 4 + labelColumnWidth + colonWidth, contentStartY + (index * rowHeight), { maxWidth });
         });
         
-        return contentEndY;
+        return boxStartY + boxHeight;
       };
 
       // Helper: Draw Summary Box

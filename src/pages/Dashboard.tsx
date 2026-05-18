@@ -149,7 +149,7 @@ const Dashboard = () => {
              <div className="space-y-8 relative z-10">
                 <div>
                    <h3 className="text-2xl font-serif font-bold leading-none">Status Pelajar</h3>
-                   <p className="text-[10px] font-bold tracking-widest text-white/30 mt-3">Status Resmi Mahasiswa</p>
+                   <p className="text-[10px] font-bold tracking-widest text-white/30 mt-3">Status Mahasiswa</p>
                 </div>
 
                 <div className="flex items-center gap-4">

@@ -129,7 +129,7 @@ const Profile = () => {
         <div className="flex-1 space-y-8 text-center md:text-left">
            <div className="space-y-4">
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                 <span className="bg-studelle-emerald text-white px-5 py-2 rounded-xl text-[10px] font-bold tracking-widest">Mahasiswa Resmi</span>
+                 <span className="bg-studelle-emerald text-white px-5 py-2 rounded-xl text-[10px] font-bold tracking-widest">Mahasiswa</span>
                  <span className="border border-studelle-emerald/10 px-5 py-2 rounded-xl text-[10px] font-bold tracking-widest text-studelle-emerald opacity-50">NIM #{profile?.nim}</span>
               </div>
               <h1 className="text-5xl md:text-7xl font-serif font-bold text-studelle-emerald tracking-tight">

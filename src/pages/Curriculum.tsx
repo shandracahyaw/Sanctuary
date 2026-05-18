@@ -43,15 +43,30 @@ const Curriculum = () => {
     .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
   const totalSks = activeCourses.reduce((acc, c) => acc + (c.sks || 0), 0);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const doc = new jsPDF();
-    const PRIMARY_COLOR = [6, 95, 70]; // #065f46 Emerald Green
+    const PRIMARY_COLOR = [0, 35, 71]; // #002347 Dark Navy
     const TEXT_DARK = [20, 20, 20];
 
-    // Page Frame
-    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.setLineWidth(0.1);
-    doc.rect(10, 10, 190, 277, 'S');
+    // Helper to get image as data URL
+    const getImageData = (url: string): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(''); // Fallback to empty if error
+        img.src = url;
+      });
+    };
+
+    const photoData = await getImageData(profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || 'U')}&background=064e3b&color=fff`);
 
     // Header Background
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
@@ -74,7 +89,8 @@ const Curriculum = () => {
     doc.text("INFORMASI IDENTITAS AKADEMIK", 20, 52);
     doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.setLineWidth(0.8);
-    doc.line(20, 54, 88, 54);
+    const titleWidth = doc.getTextWidth("INFORMASI IDENTITAS AKADEMIK");
+    doc.line(20, 54, 20 + titleWidth, 54);
 
     // Identity Content
     doc.setFontSize(11);
@@ -87,17 +103,67 @@ const Curriculum = () => {
       { label: "SEMESTER AKTIF", value: String(activeSem) },
     ];
 
+    const boxStartY = 60;
+    const boxHeight = 55;
+    const rowHeight = 7.5;
+    const verticalPadding = (boxHeight - ((identityLabels.length - 1) * rowHeight)) / 2;
+    const contentStartY = boxStartY + verticalPadding;
+
+    // Dimensions
+    const photoBoxWidth = 45;
+    const photoBoxX = 7;
+    const gap = 5;
+    const identityBoxX = photoBoxX + photoBoxWidth + gap;
+    const identityBoxWidth = 196 - photoBoxWidth - gap;
+
+    // Draw Boxes
+    doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.setLineWidth(0.5);
+    
+    // Photo Box (Left)
+    doc.rect(photoBoxX, boxStartY, photoBoxWidth, boxHeight, 'S');
+
+    // Identity Box (Right of photo)
+    doc.rect(identityBoxX, boxStartY, identityBoxWidth, boxHeight, 'S');
+
+    // Add Photo to Photo Box with Original Aspect Ratio
+    if (photoData) {
+      try {
+        const props = doc.getImageProperties(photoData);
+        const ratio = props.width / props.height;
+        let targetW = photoBoxWidth - 8;
+        let targetH = targetW / ratio;
+        
+        if (targetH > boxHeight - 8) {
+          targetH = boxHeight - 8;
+          targetW = targetH * ratio;
+        }
+        
+        const renderX = photoBoxX + (photoBoxWidth - targetW) / 2;
+        const renderY = boxStartY + (boxHeight - targetH) / 2;
+        doc.addImage(photoData, 'PNG', renderX, renderY, targetW, targetH, undefined, 'FAST');
+      } catch (e) {
+        doc.addImage(photoData, 'PNG', photoBoxX + 4, boxStartY + 4, photoBoxWidth - 8, boxHeight - 8, undefined, 'FAST');
+      }
+    }
+
+    const labelColumnWidth = 45;
+    const colonWidth = 3;
     identityLabels.forEach((item, i) => {
       doc.setFont("times", "bold");
-      doc.text(item.label, 20, 68 + (i * 7.5));
-      doc.text(":", 65, 68 + (i * 7.5));
+      doc.text(item.label, identityBoxX + 4, contentStartY + (i * rowHeight));
+      doc.text(":", identityBoxX + 4 + labelColumnWidth, contentStartY + (i * rowHeight));
       doc.setFont("times", "normal");
-      doc.text(item.value, 68, 68 + (i * 7.5));
+      
+      const maxWidth = identityBoxWidth - labelColumnWidth - colonWidth - 8;
+      doc.text(item.value, identityBoxX + 4 + labelColumnWidth + colonWidth, contentStartY + (i * rowHeight), { maxWidth });
     });
+
+    const contentEndY = boxStartY + boxHeight;
 
     // Table
     autoTable(doc, {
-      startY: 110,
+      startY: contentEndY + 10,
       head: [['SEMESTER', 'KODE MK', 'NAMA MATAKULIAH', 'SKS', 'DOSEN PENGAMPU']],
       body: activeCourses.map(c => [
         String(c.semester),

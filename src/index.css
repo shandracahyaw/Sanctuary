@@ -5,17 +5,17 @@
   --font-serif: "Playfair Display", serif;
   --font-sans: "Outfit", sans-serif;
   
-  --color-studelle-emerald: #064e3b;
-  --color-studelle-emerald-dark: #022c22;
-  --color-studelle-cream: #FFF9CD;
-  --color-studelle-cream-light: #FFFEF0;
-  --color-studelle-accent: #059669;
-  --color-studelle-gold: #C5A059;
+  --color-studelle-emerald: #002347;
+  --color-studelle-emerald-dark: #00112b;
+  --color-studelle-cream: #FFFDD0;
+  --color-studelle-cream-light: #FAF9F6;
+  --color-studelle-accent: #003366;
+  --color-studelle-gold: #FFD100;
 }
 
 @layer base {
   body {
-    @apply bg-studelle-emerald-dark text-studelle-emerald font-sans antialiased;
+    @apply bg-studelle-emerald-dark text-white font-sans antialiased;
   }
 }
 
@@ -33,11 +33,11 @@
   }
 
   .studelle-input {
-    @apply w-full bg-studelle-cream-light border border-studelle-emerald/20 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-studelle-accent/20 transition-all;
+    @apply w-full bg-studelle-cream-light border border-studelle-emerald/20 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-studelle-accent/20 transition-all text-studelle-emerald-dark;
   }
 
   .studelle-button {
-    @apply bg-studelle-accent text-white px-8 py-4 rounded-2xl font-bold text-sm tracking-widest uppercase hover:bg-studelle-accent/90 active:scale-95 transition-all shadow-xl shadow-studelle-accent/20;
+    @apply bg-studelle-gold text-studelle-emerald-dark px-8 py-4 rounded-2xl font-bold text-sm tracking-widest uppercase hover:bg-studelle-gold/90 active:scale-95 transition-all shadow-xl shadow-studelle-gold/20;
   }
 
   /* Custom Sidebar Scrollbar */
